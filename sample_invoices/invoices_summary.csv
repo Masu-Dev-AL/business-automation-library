@@ -1,0 +1,11 @@
+Invoice Number,Vendor,Customer,Email,Date,Due Date,Subtotal,Tax,Discount,Total,Filename
+INV-0001,ACME CORPORATION,Heather Morrison,amanda57@example.org,2025-11-20,2025-12-20,28450.71,2276.06,4267.61,26459.16,sample_invoices/invoice_0001.pdf
+INV-0002,ACME CORPORATION,Matthew Gordon,dgaines@example.com,2025-10-22,2025-11-21,34401.57,2752.13,0.00,37153.69,sample_invoices/invoice_0002.pdf
+INV-0003,ACME CORPORATION,Morgan Martinez,cory97@example.net,2025-11-12,2025-12-12,51885.24,4150.82,5188.52,50847.53,sample_invoices/invoice_0003.pdf
+INV-0004,ACME CORPORATION,Kimberly Franklin,hunterholmes@example.org,2025-12-15,2026-01-14,44674.98,3574.00,6701.25,41547.73,sample_invoices/invoice_0004.pdf
+INV-0005,ACME CORPORATION,Daniel Rangel,kim06@example.com,2025-10-26,2025-11-25,8467.44,677.39,0.00,9144.83,sample_invoices/invoice_0005.pdf
+INV-0006,ACME CORPORATION,Deanna Williams,brooke53@example.org,2025-12-05,2026-01-04,71681.08,5734.49,7168.11,70247.45,sample_invoices/invoice_0006.pdf
+INV-0007,ACME CORPORATION,Shawn Wilcox,vanessa72@example.net,2025-11-16,2025-12-16,30998.97,2479.92,0.00,33478.89,sample_invoices/invoice_0007.pdf
+INV-0008,ACME CORPORATION,Jason Hall,johnmitchell@example.net,2025-11-15,2025-12-15,28694.12,2295.53,2869.41,28120.23,sample_invoices/invoice_0008.pdf
+INV-0009,ACME CORPORATION,Tracy Blanchard,brownjeremy@example.org,2025-12-04,2026-01-03,32591.36,2607.31,3259.14,31939.53,sample_invoices/invoice_0009.pdf
+INV-0010,ACME CORPORATION,Michael Schaefer MD,bethany64@example.net,2025-12-22,2026-01-21,32413.71,2593.10,4862.06,30144.75,sample_invoices/invoice_0010.pdf
