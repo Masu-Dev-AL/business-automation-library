@@ -1,87 +1,20 @@
-# Environment files with secrets
-config/.env
+# Environment files
 .env
 *.env
 
-# Python virtual environment
+# Python
 venv/
 .venv/
-env/
-
-# Python cache
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-
-# Lambda deployment packages with dependencies
-lambda_v2/bedrock_trigger/boto3/
-lambda_v2/bedrock_trigger/botocore/
-lambda_v2/bedrock_trigger/s3transfer/
-lambda_v2/bedrock_trigger/jmespath/
-lambda_v2/bedrock_trigger/dateutil/
-lambda_v2/bedrock_trigger/urllib3/
-lambda_v2/bedrock_trigger/six.py
-lambda_v2/bedrock_trigger/bin/
-lambda_v2/bedrock_trigger/*.dist-info/
-
-lambda_v2/invoice_processor/boto3/
-lambda_v2/invoice_processor/botocore/
-lambda_v2/invoice_processor/s3transfer/
-lambda_v2/invoice_processor/jmespath/
-lambda_v2/invoice_processor/dateutil/
-lambda_v2/invoice_processor/urllib3/
-lambda_v2/invoice_processor/psycopg2/
-lambda_v2/invoice_processor/psycopg2_binary*/
-lambda_v2/invoice_processor/six.py
-lambda_v2/invoice_processor/bin/
-lambda_v2/invoice_processor/*.dist-info/
-
-lambda_v2/invoice_approval/boto3/
-lambda_v2/invoice_approval/botocore/
-lambda_v2/invoice_approval/s3transfer/
-lambda_v2/invoice_approval/jmespath/
-lambda_v2/invoice_approval/dateutil/
-lambda_v2/invoice_approval/urllib3/
-lambda_v2/invoice_approval/psycopg2/
-lambda_v2/invoice_approval/psycopg2_binary*/
-lambda_v2/invoice_approval/six.py
-lambda_v2/invoice_approval/bin/
-lambda_v2/invoice_approval/*.dist-info/
-
-# Lambda ZIP files
-lambda_v2/*.zip
 
 # IDE
 .vscode/
 .idea/
-*.swp
-*.swo
 
-# Claude Code settings
-.claude/
-
-# OS files
+# OS
 .DS_Store
 Thumbs.db
 
-# Log files
-*.log
-
-# Temp files
-*.tmp
-*.temp
-
-# Generated dashboard (can be regenerated)
-dashboard.html
-
-# Local test files
-test_*.py
-*_test.py
-
-# AWS credentials (should never be committed)
-credentials
-credentials.json
-*.pem
-*.key
+# Claude Code
+.claude/
