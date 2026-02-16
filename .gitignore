@@ -22,5 +22,9 @@ deprecated/
 # Windows artifacts
 nul
 
+# Personal / misc
+CLAUDE.md
+misc/
+
 # Claude Code
 .claude/

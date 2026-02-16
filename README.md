@@ -16,6 +16,7 @@ This repository contains code examples and complete implementations featured on 
 - Step-by-step technical guide
 - Sample data for testing
 - Deployment instructions
+- Architecture Diagram
 
 ## Getting Started
 
