@@ -16,6 +16,7 @@
    - [3.5 SendGrid Email Setup](#35-sendgrid-email-setup)
    - [3.6 Building the Pipedream Workflow](#36-building-the-pipedream-workflow)
    - [3.7 Environment Variables in Pipedream](#37-environment-variables-in-pipedream)
+
 4. [Script Reference](#4-script-reference)
 5. [Database Reference](#5-database-reference)
 6. [Testing Procedures](#6-testing-procedures)
@@ -409,35 +410,6 @@ All credentials are stored as Pipedream environment variables — never hardcode
 
 ---
 
-### 3.8 Connecting a Real Support Email Address
-
-In production, customers should email a real address like `support@yourdomain.com` — not a `@pipedream.net` address. Use email forwarding to bridge the two.
-
-#### Option A — Email Forwarding (Recommended for most setups)
-
-Forward all mail from your support address to your Pipedream email trigger address. No DNS changes required.
-
-**Gmail / Google Workspace:**
-1. Go to **Settings → See all settings → Forwarding and POP/IMAP**
-2. Click **Add a forwarding address**
-3. Enter your `@pipedream.net` trigger address
-4. Confirm the verification email Pipedream receives (check your workflow execution log — Pipedream captures it as a trigger event)
-5. Set the rule to **Forward a copy** and optionally **keep a copy** in the inbox
-
-**Result:** Customer emails `support@yourdomain.com` → Google forwards to Pipedream → workflow fires automatically.
-
-#### Option B — MX Record Routing (Production / custom domain)
-
-Point your domain's MX DNS records directly at Pipedream. Every email to `*@yourdomain.com` routes to Pipedream without forwarding.
-
-1. In your domain registrar's DNS settings, add an MX record pointing to Pipedream's inbound mail servers
-2. Refer to Pipedream's current documentation for the exact MX record values
-3. Propagation takes up to 48 hours
-
-> For demos and small production workloads, Option A is sufficient and takes under 5 minutes to set up.
-
----
-
 ## 4. Script Reference
 
 | Script | Step Name | Input Steps | Purpose |
@@ -558,70 +530,25 @@ ORDER BY avg_sentiment;
 
 ## 6. Testing Procedures
 
-### 6.1 Sample Webhook Payload
+### 6.1 Sending Test Emails
 
-Use this payload to test each step during build. Save to `sample_tickets/sample_payloads.json`.
+With the workflow deployed, send real emails to your Pipedream trigger address to fire the pipeline end-to-end. Use the two examples below from your own email client.
 
-```json
-[
-  {
-    "name": "Sarah Chen",
-    "email": "sarah.chen@example.com",
-    "subject": "Charged twice for last month's subscription",
-    "body": "Hi, I was charged twice on my credit card for my monthly plan this billing cycle. I can see two identical charges of $49.99 on October 3rd. Please refund the duplicate charge as soon as possible."
-  },
-  {
-    "name": "Marcus Williams",
-    "email": "marcus@example.com",
-    "subject": "API returning 500 errors on /orders endpoint",
-    "body": "Our integration with your API has been throwing 500 Internal Server Errors since this morning on the /orders endpoint. This is blocking our entire checkout flow. We are losing sales right now. Error: InternalServerError at line 42. Please escalate immediately."
-  },
-  {
-    "name": "Priya Patel",
-    "email": "priya.patel@gmail.com",
-    "subject": "Order #84521 hasn't arrived yet",
-    "body": "Hello, my order #84521 was supposed to arrive 5 days ago. The tracking page still shows 'In Transit' with no updates for the past 3 days. Could you look into this and let me know the status?"
-  },
-  {
-    "name": "James Thompson",
-    "email": "james.t@company.org",
-    "subject": "Question about exporting data",
-    "body": "Hi team, I was wondering if there's a way to export all my historical data as a CSV file. I've looked through the settings but can't find the option. Happy to wait for a response, no rush at all."
-  }
-]
-```
+**Test Email 1 — Billing (expected: category=billing, urgency=medium)**
 
-### 6.2 Sending Test Requests
+- **To:** your `@pipedream.net` trigger address
+- **Subject:** `Charged twice for last month's subscription`
+- **Body:**
+  > Hi, I was charged twice on my credit card for my monthly plan this billing cycle. I can see two identical charges of $49.99 on October 3rd. Please refund the duplicate charge as soon as possible.
 
-Replace `YOUR_WEBHOOK_URL` with the URL from Step 1 of the Pipedream workflow.
+**Test Email 2 — Critical technical issue (expected: category=technical, urgency=critical)**
 
-> **Common mistake:** `-X` sets the HTTP method — `POST` must come immediately after it, before the URL. `curl -X POST https://...` is correct. `curl -X https://...` will throw `no URL specified`.
+- **To:** your `@pipedream.net` trigger address
+- **Subject:** `API returning 500 errors — checkout completely down`
+- **Body:**
+  > Our integration with your API has been throwing 500 Internal Server Errors since this morning on the /orders endpoint. This is blocking our entire checkout flow. We are losing sales right now. Please escalate immediately.
 
-**Single ticket (billing — should route to #support-billing):**
-```bash
-curl -X POST YOUR_WEBHOOK_URL \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Sarah Chen",
-    "email": "sarah.chen@example.com",
-    "subject": "Charged twice for last month",
-    "body": "I was charged twice on my credit card. Please refund the duplicate charge."
-  }'
-```
-
-**Critical technical issue (should be urgency=critical):**
-```bash
-curl -X POST YOUR_WEBHOOK_URL \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Marcus Williams",
-    "email": "marcus@example.com",
-    "subject": "API returning 500 errors — checkout completely down",
-    "body": "Our integration with your API has been throwing 500 errors since this morning. This is blocking our entire checkout flow. We are losing sales right now."
-  }'
-```
-
-### 6.3 Verification Checklist
+### 6.2 Verification Checklist
 
 After sending each test request, verify all five outputs:
 
@@ -633,7 +560,7 @@ After sending each test request, verify all five outputs:
 - [ ] **Step 5b (slack)** — message appears in the correct Slack channel
 - [ ] **Step 5c (email)** — auto-reply arrives in the submitter email inbox
 
-### 6.4 Verify PostgreSQL Record
+### 6.3 Verify PostgreSQL Record
 
 In the Neon SQL Editor:
 
@@ -699,6 +626,28 @@ Confirm all columns are populated, especially `category`, `urgency`, `ai_reasoni
 **Cause:** The webhook URL stored in the environment variable corresponds to a channel that has been deleted, or the wrong env variable is being used.
 
 **Fix:** Regenerate the webhook URL for the channel in the Slack App settings and update the environment variable in Pipedream.
+
+---
+
+### Auto-Reply Email Goes to Spam
+
+**Symptom:** `pd_send_reply_email.py` returns `status_code: 202` but the submitter never receives the email.
+
+**Cause:** SendGrid accepted the message (202 = success), but the receiving mail server flagged it as spam. This commonly happens when using Single Sender Verification with a free email address (Gmail, Outlook, etc.) as the `SENDGRID_FROM_EMAIL`. Receiving Gmail seeing a message "from" another Gmail address routed through SendGrid's servers treats it as suspicious.
+
+**Fix (testing):** Check your spam / junk folder — the email will be there.
+
+**Fix (production):** Switch from Single Sender Verification to Domain Authentication in SendGrid (Settings → Sender Authentication → Domain Authentication). Authenticating a real domain via DNS records resolves deliverability issues permanently.
+
+---
+
+### Auto-Reply Email Has Empty Recipient
+
+**Symptom:** `pd_send_reply_email.py` returns `status_code: 400` or the recipient field is blank in the step output.
+
+**Cause:** `pd_normalize_ticket.py` was reading the submitter email from the `return-path` header, which is often absent in normal emails. This caused `email` to silently resolve to `""`.
+
+**Fix:** The script now reads from `from.value[0].address` (the structured parse of the From header) with a fallback to splitting the `from` text on ` <`. Verify the `normalize_ticket` step output shows a populated `email` field before debugging downstream steps.
 
 ---
 
