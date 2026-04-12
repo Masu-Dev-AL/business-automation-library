@@ -1,0 +1,2430 @@
+{
+    "name": "Lead Scoring CRM",
+    "flow": [
+        {
+            "id": 2,
+            "module": "typeform:WatchResponses",
+            "version": 2,
+            "parameters": {
+                "limit": 1,
+                "query": "",
+                "fields": [],
+                "formId": "YOUR_TYPEFORM_FORM_ID",
+                "__IMTCONN__": 8214778
+            },
+            "filter": null,
+            "mapper": {},
+            "metadata": {
+                "designer": {
+                    "x": 0,
+                    "y": 0
+                },
+                "restore": {
+                    "parameters": {
+                        "formId": {
+                            "label": "Lead Intake Form"
+                        },
+                        "__IMTCONN__": {
+                            "data": {
+                                "scoped": "true",
+                                "connection": "typeform2"
+                            },
+                            "label": "My Typeform connection"
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "__IMTCONN__",
+                        "type": "account:typeform2",
+                        "label": "Connection",
+                        "required": true
+                    },
+                    {
+                        "name": "limit",
+                        "type": "uinteger",
+                        "label": "Limit",
+                        "required": true
+                    },
+                    {
+                        "name": "formId",
+                        "type": "select",
+                        "label": "Form ID",
+                        "required": true
+                    },
+                    {
+                        "name": "completed",
+                        "type": "boolean",
+                        "label": "Completed"
+                    },
+                    {
+                        "name": "query",
+                        "type": "text",
+                        "label": "Query"
+                    },
+                    {
+                        "name": "fields",
+                        "spec": {
+                            "name": "value",
+                            "type": "select",
+                            "dynamic": true,
+                            "options": [],
+                            "required": true
+                        },
+                        "type": "array",
+                        "label": "Fields"
+                    }
+                ],
+                "interface": [
+                    {
+                        "name": "landing_id",
+                        "type": "text",
+                        "label": "Landing ID"
+                    },
+                    {
+                        "name": "token",
+                        "type": "text",
+                        "label": "Token"
+                    },
+                    {
+                        "name": "response_id",
+                        "type": "text",
+                        "label": "Response ID"
+                    },
+                    {
+                        "name": "landed_at",
+                        "type": "date",
+                        "label": "Landed at"
+                    },
+                    {
+                        "name": "submitted_at",
+                        "type": "date",
+                        "label": "Submitted at"
+                    },
+                    {
+                        "name": "metadata",
+                        "spec": [
+                            {
+                                "name": "user_agent",
+                                "type": "text",
+                                "label": "User Agent"
+                            },
+                            {
+                                "name": "platform",
+                                "type": "text",
+                                "label": "Platform"
+                            },
+                            {
+                                "name": "referer",
+                                "type": "url",
+                                "label": "Referer"
+                            },
+                            {
+                                "name": "network_id",
+                                "type": "text",
+                                "label": "Network ID"
+                            },
+                            {
+                                "name": "browser",
+                                "type": "text",
+                                "label": "Browser"
+                            }
+                        ],
+                        "type": "collection",
+                        "label": "Metadata"
+                    },
+                    {
+                        "name": "answers",
+                        "spec": [
+                            {
+                                "name": "field",
+                                "spec": [
+                                    {
+                                        "name": "id",
+                                        "type": "text",
+                                        "label": "ID"
+                                    },
+                                    {
+                                        "name": "type",
+                                        "type": "text",
+                                        "label": "Type"
+                                    },
+                                    {
+                                        "name": "ref",
+                                        "type": "text",
+                                        "label": "Internal Name"
+                                    }
+                                ],
+                                "type": "collection",
+                                "label": "Field"
+                            },
+                            {
+                                "name": "type",
+                                "type": "text",
+                                "label": "Type"
+                            },
+                            {
+                                "name": "text",
+                                "type": "text",
+                                "label": "Text"
+                            },
+                            {
+                                "name": "email",
+                                "type": "email",
+                                "label": "Email"
+                            },
+                            {
+                                "name": "boolean",
+                                "type": "boolean",
+                                "label": "Boolean"
+                            },
+                            {
+                                "name": "number",
+                                "type": "number",
+                                "label": "Number"
+                            },
+                            {
+                                "name": "date",
+                                "type": "date",
+                                "label": "Date"
+                            },
+                            {
+                                "name": "long_text",
+                                "type": "text",
+                                "label": "Long Text"
+                            },
+                            {
+                                "name": "short_text",
+                                "type": "text",
+                                "label": "Short Text"
+                            },
+                            {
+                                "name": "file_url",
+                                "type": "url",
+                                "label": "File URL"
+                            },
+                            {
+                                "name": "url",
+                                "type": "url",
+                                "label": "URL"
+                            },
+                            {
+                                "name": "phone_number",
+                                "type": "text",
+                                "label": "Phone Number"
+                            },
+                            {
+                                "name": "choice",
+                                "spec": [
+                                    {
+                                        "name": "label",
+                                        "type": "text",
+                                        "label": "Label"
+                                    },
+                                    {
+                                        "name": "other",
+                                        "type": "text",
+                                        "label": "Other"
+                                    }
+                                ],
+                                "type": "collection",
+                                "label": "Choice"
+                            },
+                            {
+                                "name": "choices",
+                                "spec": [
+                                    {
+                                        "name": "labels",
+                                        "spec": {
+                                            "type": "text"
+                                        },
+                                        "type": "array",
+                                        "label": "Labels"
+                                    }
+                                ],
+                                "type": "collection",
+                                "label": "Choices"
+                            }
+                        ],
+                        "type": "array",
+                        "label": "Answers"
+                    },
+                    {
+                        "name": "mappable_answers",
+                        "spec": [
+                            {
+                                "name": "88da7f35-938d-4d56-82c2-f176e579e654",
+                                "type": "text",
+                                "label": "What is your name?"
+                            },
+                            {
+                                "name": "d8351a8e-0321-443d-8d56-c5a9dd86a498",
+                                "type": "email",
+                                "label": "What is your work email?"
+                            },
+                            {
+                                "name": "7a8d1cbf-6dc4-4017-ba9b-5a383f353ef4",
+                                "type": "text",
+                                "label": "What is your company name?"
+                            },
+                            {
+                                "name": "04c99122-81fc-41a5-bd4b-09d0d04b89d4",
+                                "type": "text",
+                                "label": "What is your role?"
+                            },
+                            {
+                                "name": "38270bc2-a228-4015-87c9-1bab8af32727",
+                                "type": "text",
+                                "label": "How large is your company?"
+                            },
+                            {
+                                "name": "09f9cdfc-90fb-44a7-bf57-92c56ca9c24d",
+                                "type": "text",
+                                "label": "What is your monthly budget for this?"
+                            },
+                            {
+                                "name": "fc886c20-5aea-4969-af34-1553ae3f6986",
+                                "type": "text",
+                                "label": "What is the primary challenge you are trying to solve?"
+                            },
+                            {
+                                "name": "76ca69bf-4d04-476a-982c-b45011f84ed3",
+                                "type": "text",
+                                "label": "Where is your business based? (Country) (group)"
+                            },
+                            {
+                                "name": "391338d3-52c4-4a41-94d3-c1b7ab1792a9",
+                                "type": "text",
+                                "label": "Address / Parent Group: Where is your business based? (Country)"
+                            },
+                            {
+                                "name": "e77c1e2b-8ee5-4897-a888-2fa5f3ec3f41",
+                                "type": "text",
+                                "label": "Address line 2 / Parent Group: Where is your business based? (Country)"
+                            },
+                            {
+                                "name": "300b64c8-53c4-4eb0-a1b1-002a387e6bcd",
+                                "type": "text",
+                                "label": "City/Town / Parent Group: Where is your business based? (Country)"
+                            },
+                            {
+                                "name": "1375eb54-4e7c-4c7f-9ab0-e68ff1e76a55",
+                                "type": "text",
+                                "label": "State/Region/Province / Parent Group: Where is your business based? (Country)"
+                            },
+                            {
+                                "name": "5c9c49e5-3e53-4faa-b670-ae9831b88c18",
+                                "type": "text",
+                                "label": "Zip/Post Code / Parent Group: Where is your business based? (Country)"
+                            },
+                            {
+                                "name": "c3580531-ca6d-43ff-9b5b-fd92383f0855",
+                                "type": "text",
+                                "label": "Country / Parent Group: Where is your business based? (Country)"
+                            }
+                        ],
+                        "type": "collection",
+                        "label": "Mappable Answers"
+                    },
+                    {
+                        "name": "hidden",
+                        "spec": [],
+                        "type": "collection",
+                        "label": "Hidden"
+                    },
+                    {
+                        "name": "calculated",
+                        "spec": [
+                            {
+                                "name": "score",
+                                "type": "number",
+                                "label": "Score"
+                            }
+                        ],
+                        "type": "collection",
+                        "label": "Calculated"
+                    }
+                ]
+            }
+        },
+        {
+            "id": 3,
+            "module": "util:SetVariables",
+            "version": 1,
+            "parameters": {},
+            "mapper": {
+                "variables": [
+                    {
+                        "name": "lead_id",
+                        "value": "LEAD-{{formatDate(now; \"X\")}}"
+                    },
+                    {
+                        "name": "lead_name",
+                        "value": "{{2.mappable_answers.`88da7f35-938d-4d56-82c2-f176e579e654`}}"
+                    },
+                    {
+                        "name": "lead_email",
+                        "value": "{{2.mappable_answers.`d8351a8e-0321-443d-8d56-c5a9dd86a498`}}"
+                    },
+                    {
+                        "name": "company",
+                        "value": "{{2.mappable_answers.`38270bc2-a228-4015-87c9-1bab8af32727`}}"
+                    },
+                    {
+                        "name": "role",
+                        "value": "{{2.mappable_answers.`04c99122-81fc-41a5-bd4b-09d0d04b89d4`}}"
+                    },
+                    {
+                        "name": "company_size",
+                        "value": "{{2.mappable_answers.`38270bc2-a228-4015-87c9-1bab8af32727`}}"
+                    },
+                    {
+                        "name": "budget",
+                        "value": "{{2.mappable_answers.`09f9cdfc-90fb-44a7-bf57-92c56ca9c24d`}}"
+                    },
+                    {
+                        "name": "challenge",
+                        "value": "{{2.mappable_answers.`fc886c20-5aea-4969-af34-1553ae3f6986`}}"
+                    },
+                    {
+                        "name": "country",
+                        "value": "{{2.mappable_answers.`c3580531-ca6d-43ff-9b5b-fd92383f0855`}}"
+                    },
+                    {
+                        "name": "submitted_at",
+                        "value": "{{2.submitted_at}}"
+                    }
+                ],
+                "scope": "roundtrip"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 300,
+                    "y": 0
+                },
+                "restore": {
+                    "expect": {
+                        "variables": {
+                            "items": [
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null
+                            ]
+                        },
+                        "scope": {
+                            "label": "One cycle"
+                        }
+                    }
+                },
+                "expect": [
+                    {
+                        "name": "variables",
+                        "type": "array",
+                        "label": "Variables",
+                        "spec": [
+                            {
+                                "name": "name",
+                                "label": "Variable name",
+                                "type": "text",
+                                "required": true
+                            },
+                            {
+                                "name": "value",
+                                "label": "Variable value",
+                                "type": "any"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "scope",
+                        "type": "select",
+                        "label": "Variable lifetime",
+                        "required": true,
+                        "validate": {
+                            "enum": [
+                                "roundtrip",
+                                "execution"
+                            ]
+                        }
+                    }
+                ],
+                "interface": [
+                    {
+                        "name": "lead_id",
+                        "label": "lead_id",
+                        "type": "any"
+                    },
+                    {
+                        "name": "lead_name",
+                        "label": "lead_name",
+                        "type": "any"
+                    },
+                    {
+                        "name": "lead_email",
+                        "label": "lead_email",
+                        "type": "any"
+                    },
+                    {
+                        "name": "company",
+                        "label": "company",
+                        "type": "any"
+                    },
+                    {
+                        "name": "role",
+                        "label": "role",
+                        "type": "any"
+                    },
+                    {
+                        "name": "company_size",
+                        "label": "company_size",
+                        "type": "any"
+                    },
+                    {
+                        "name": "budget",
+                        "label": "budget",
+                        "type": "any"
+                    },
+                    {
+                        "name": "challenge",
+                        "label": "challenge",
+                        "type": "any"
+                    },
+                    {
+                        "name": "country",
+                        "label": "country",
+                        "type": "any"
+                    },
+                    {
+                        "name": "submitted_at",
+                        "label": "submitted_at",
+                        "type": "any"
+                    }
+                ]
+            }
+        },
+        {
+            "id": 5,
+            "module": "anthropic-claude:simpleTextPrompt",
+            "version": 1,
+            "parameters": {},
+            "mapper": {
+                "model": "claude-haiku-4-5",
+                "textPrompt": "You are a B2B sales qualification assistant. Score the following lead and return a JSON object only. Do not use markdown. Do not wrap the response in code fences. Do not use ``` or ```json. Your response must begin with { and end\r\n  with }. Any characters outside the JSON object will cause a system failure.\r\n\r\nLEAD DETAILS:\r\n- Name:        {{2.mappable_answers.`88da7f35-938d-4d56-82c2-f176e579e654`}}\\n\n- Company:    {{2.mappable_answers.`7a8d1cbf-6dc4-4017-ba9b-5a383f353ef4`}} \\n\n- Country:   {{2.mappable_answers.`c3580531-ca6d-43ff-9b5b-fd92383f0855`}}\\n\n- Role:         {{2.mappable_answers.`04c99122-81fc-41a5-bd4b-09d0d04b89d4`}}\\n\n- Company Size: {{2.mappable_answers.`38270bc2-a228-4015-87c9-1bab8af32727`}}\\n\n- Budget Range: {{2.mappable_answers.`09f9cdfc-90fb-44a7-bf57-92c56ca9c24d`}}\\n\n- Challenge:    \n{{2.mappable_answers.`fc886c20-5aea-4969-af34-1553ae3f6986`}}\\n\nSCORING CRITERIA:\r\n\r\nICP Fit Score (1–10):\r\n- 9–10: Decision maker (C-Suite, VP, Director) at 51+ person company with $5k+ budget\r\n- 7–8:  Manager or Team Lead at 11–50 person company with $1k–$5k budget\r\n- 5–6:  Individual contributor or small team with some budget signal\r\n- 1–4:  No budget signal, very early stage, or unclear authority\r\n\r\nIntent Score (1–10):\r\n- 9–10: Describes a specific urgent problem, mentions current tool failures, or indicates active evaluation\r\n- 7–8:  Clear pain point articulated with some urgency implied\r\n- 5–6:  General interest, exploring options\r\n- 1–4:  Vague inquiry with no clear problem stated\r\n\r\nPriority Tier rules:\r\n- \"hot\":  ICP Score >= 7 AND Intent Score >= 7\r\n- \"warm\": ICP Score >= 5 AND Intent Score >= 5 (and not hot)\r\n- \"cold\": everything else\r\n\r\nRecommended Action:\r\n- hot:  \"Call within 2 hours\"\r\n- warm: \"Send personalised follow-up within 24 hours\"\r\n- cold: \"Add to nurture sequence\"\r\n\r\n Territory rules:\r\n  - \"North America\": US, U.S., USA, U.S.A., United States, United States of America, Canada, CA, Mexico, MX — if the country field contains any of these or\r\n  clearly refers to a North American country, classify as \"North America\"\r\n  - \"Europe\": UK, United Kingdom, Germany, France, Spain, Italy, Netherlands, Nordics, and other European countries\r\n  - \"Asia\": India, Japan, China, Singapore, Australia, and other APAC countries\r\n  - \"General\": anything that doesn't fit the above\n\nIMPORTANT: Your response must start with { and end with }. No other characters before or after.\n\nReturn ONLY this JSON (no other text):\r\n{\r\n  \"icp_score\": <number 1-10>,\r\n  \"intent_score\": <number 1-10>,\r\n  \"priority_tier\": \"<hot|warm|cold>\",\r\n  \"recommended_action\": \"<string>\",\r\n  \"reasoning\": \"<2–3 sentences explaining the scores>\",\"territory_label\": \"<North America|Europe|Asia|General>\"\n\r\n}",
+                "max_tokens": "1000"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 639,
+                    "y": 0
+                },
+                "restore": {
+                    "expect": {
+                        "model": {
+                            "label": "Claude Haiku 4.5The quickest option, perfect for simple questions and instant, straightforward answers"
+                        }
+                    }
+                },
+                "expect": [
+                    {
+                        "name": "model",
+                        "type": "select",
+                        "label": "Model",
+                        "required": true,
+                        "validate": {
+                            "enum": [
+                                "claude-sonnet-4-6",
+                                "claude-opus-4-6",
+                                "claude-sonnet-4-5",
+                                "claude-haiku-4-5",
+                                "claude-opus-4-5"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "textPrompt",
+                        "type": "text",
+                        "label": "Text Prompt",
+                        "required": true
+                    },
+                    {
+                        "name": "max_tokens",
+                        "type": "uinteger",
+                        "label": "Max Tokens",
+                        "required": true
+                    }
+                ]
+            }
+        },
+        {
+            "id": 8,
+            "module": "json:ParseJSON",
+            "version": 1,
+            "parameters": {
+                "type": 329119
+            },
+            "mapper": {
+                "json": "{{5.result}}"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 974,
+                    "y": 0
+                },
+                "restore": {
+                    "parameters": {
+                        "type": {
+                            "label": "claude-haiku-data-structure"
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "type",
+                        "type": "udt",
+                        "label": "Data structure"
+                    }
+                ],
+                "expect": [
+                    {
+                        "name": "json",
+                        "type": "text",
+                        "label": "JSON string",
+                        "required": true
+                    }
+                ],
+                "interface": [
+                    {
+                        "help": "",
+                        "name": "icp_score",
+                        "type": "number",
+                        "label": null,
+                        "default": null,
+                        "required": true
+                    },
+                    {
+                        "help": "",
+                        "name": "intent_score",
+                        "type": "number",
+                        "label": null,
+                        "default": null,
+                        "required": true
+                    },
+                    {
+                        "help": "",
+                        "name": "priority_tier",
+                        "type": "text",
+                        "label": null,
+                        "default": null,
+                        "required": true,
+                        "multiline": false
+                    },
+                    {
+                        "help": "",
+                        "name": "recommended_action",
+                        "type": "text",
+                        "label": null,
+                        "default": null,
+                        "required": true,
+                        "multiline": false
+                    },
+                    {
+                        "help": "",
+                        "name": "reasoning",
+                        "type": "text",
+                        "label": null,
+                        "default": null,
+                        "required": true,
+                        "multiline": false
+                    }
+                ]
+            }
+        },
+        {
+            "id": 9,
+            "module": "util:SetVariables",
+            "version": 1,
+            "parameters": {},
+            "mapper": {
+                "variables": [
+                    {
+                        "name": "territory_label",
+                        "value": "{{8.territory_label}}"
+                    },
+                    {
+                        "name": "rep_handle",
+                        "value": "{{switch(8.territory_label; \"North America\"; \"Sarah Mitchell\"; \"Europe\"; \"James Hartley\"; \"Asia-Pacific\"; \"Priya Chen\"; \"Manager\")}}"
+                    },
+                    {
+                        "name": "priority_label",
+                        "value": "{{switch(8.priority_tier; \"hot\"; \"🔥 HOT\"; \"warm\"; \"🟡 WARM\"; \"🔵 COLD\")}}"
+                    },
+                    {
+                        "name": "slack_webhook_url",
+                        "value": "{{switch(8.territory_label; \"North America\"; \"YOUR_SLACK_WEBHOOK_NORTH_AMERICA\"; \"Europe\"; \"YOUR_SLACK_WEBHOOK_EUROPE\"; \"Asia-Pacific\"; \"YOUR_SLACK_WEBHOOK_ASIA\"; \"YOUR_SLACK_WEBHOOK_GENERAL\")}}"
+                    },
+                    {
+                        "name": "slack_message",
+                        "value": "{{switch(8.territory_label; \"North America\"; \"Sarah Mitchell\"; \"Europe\"; \"James Hartley\"; \"Asia-Pacific\"; \"Priya Chen\"; \"Manager\")}} — New lead assigned  {{8.priority_tier}}\n\n* {{3.company}}* | {{3.role}} 📍 {{3.country}}({{8.territory_label}})\r\n💰 Budget: {{3.budget}} | 👥 Size: {{3.company_size}}💬 _\"{{3.challenge}}\"_\r\n\r\n📊 ICP Score: {{8.icp_score}}/10 | Intent Score: {{8.intent_score}}/10\r\n✅ {{8.recommended_action}}"
+                    }
+                ],
+                "scope": "roundtrip"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 1307,
+                    "y": -4
+                },
+                "restore": {
+                    "expect": {
+                        "variables": {
+                            "items": [
+                                null,
+                                null,
+                                null,
+                                null,
+                                null
+                            ]
+                        },
+                        "scope": {
+                            "label": "One cycle"
+                        }
+                    }
+                },
+                "expect": [
+                    {
+                        "name": "variables",
+                        "type": "array",
+                        "label": "Variables",
+                        "spec": [
+                            {
+                                "name": "name",
+                                "label": "Variable name",
+                                "type": "text",
+                                "required": true
+                            },
+                            {
+                                "name": "value",
+                                "label": "Variable value",
+                                "type": "any"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "scope",
+                        "type": "select",
+                        "label": "Variable lifetime",
+                        "required": true,
+                        "validate": {
+                            "enum": [
+                                "roundtrip",
+                                "execution"
+                            ]
+                        }
+                    }
+                ],
+                "interface": [
+                    {
+                        "name": "territory_label",
+                        "label": "territory_label",
+                        "type": "any"
+                    },
+                    {
+                        "name": "rep_handle",
+                        "label": "rep_handle",
+                        "type": "any"
+                    },
+                    {
+                        "name": "priority_label",
+                        "label": "priority_label",
+                        "type": "any"
+                    },
+                    {
+                        "name": "slack_webhook_url",
+                        "label": "slack_webhook_url",
+                        "type": "any"
+                    },
+                    {
+                        "name": "slack_message",
+                        "label": "slack_message",
+                        "type": "any"
+                    }
+                ]
+            }
+        },
+        {
+            "id": 11,
+            "module": "airtable:ActionSearchRecords",
+            "version": 3,
+            "parameters": {
+                "__IMTCONN__": 8215058
+            },
+            "mapper": {
+                "base": "appXXXXXXXXXXXXXX",
+                "table": "tblXXXXXXXXXXXXXX",
+                "formula": "{Email} = \"{{2.mappable_answers.`d8351a8e-0321-443d-8d56-c5a9dd86a498`}}\"",
+                "maxRecords": "1",
+                "useColumnId": false
+            },
+            "metadata": {
+                "designer": {
+                    "x": 1623,
+                    "y": 4
+                },
+                "restore": {
+                    "expect": {
+                        "base": {
+                            "mode": "chose",
+                            "label": "Lead Scoring CRM"
+                        },
+                        "sort": {
+                            "mode": "chose"
+                        },
+                        "view": {
+                            "mode": "chose"
+                        },
+                        "table": {
+                            "mode": "chose",
+                            "label": "Leads"
+                        },
+                        "fields": {
+                            "mode": "chose"
+                        },
+                        "useColumnId": {
+                            "mode": "chose"
+                        }
+                    },
+                    "parameters": {
+                        "__IMTCONN__": {
+                            "data": {
+                                "scoped": "true",
+                                "connection": "airtable2"
+                            },
+                            "label": "My Airtable Token or Key connection"
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "__IMTCONN__",
+                        "type": "account:airtable3,airtable2",
+                        "label": "Connection",
+                        "required": true
+                    }
+                ],
+                "expect": [
+                    {
+                        "name": "base",
+                        "type": "select",
+                        "label": "Base",
+                        "required": true
+                    },
+                    {
+                        "name": "useColumnId",
+                        "type": "boolean",
+                        "label": "Use Column ID",
+                        "required": true
+                    },
+                    {
+                        "name": "table",
+                        "type": "select",
+                        "label": "Table",
+                        "required": true
+                    },
+                    {
+                        "name": "formula",
+                        "type": "text",
+                        "label": "Formula"
+                    },
+                    {
+                        "name": "maxRecords",
+                        "type": "integer",
+                        "label": "Limit"
+                    },
+                    {
+                        "name": "sort",
+                        "spec": [
+                            {
+                                "name": "field",
+                                "type": "select",
+                                "label": "Field",
+                                "dynamic": true,
+                                "options": []
+                            },
+                            {
+                                "name": "direction",
+                                "type": "select",
+                                "label": "Direction",
+                                "options": [
+                                    {
+                                        "label": "Descending",
+                                        "value": "desc"
+                                    },
+                                    {
+                                        "label": "Ascending",
+                                        "value": "asc"
+                                    }
+                                ]
+                            }
+                        ],
+                        "type": "array",
+                        "label": "Sort"
+                    },
+                    {
+                        "name": "view",
+                        "type": "select",
+                        "label": "View"
+                    },
+                    {
+                        "name": "fields",
+                        "type": "select",
+                        "label": "Output Fields",
+                        "multiple": true
+                    }
+                ],
+                "interface": [
+                    {
+                        "name": "__IMTLENGTH__",
+                        "type": "uinteger",
+                        "label": "Total number of bundles"
+                    },
+                    {
+                        "name": "__IMTINDEX__",
+                        "type": "uinteger",
+                        "label": "Bundle order position"
+                    },
+                    {
+                        "name": "id",
+                        "type": "text",
+                        "label": "ID"
+                    },
+                    {
+                        "name": "createdTime",
+                        "type": "date",
+                        "label": "Created Time"
+                    },
+                    {
+                        "name": "Lead ID",
+                        "type": "text",
+                        "label": "Lead ID"
+                    },
+                    {
+                        "name": "Name",
+                        "type": "text",
+                        "label": "Name"
+                    },
+                    {
+                        "name": "Email",
+                        "type": "text",
+                        "label": "Email"
+                    },
+                    {
+                        "name": "Company",
+                        "type": "text",
+                        "label": "Company"
+                    },
+                    {
+                        "name": "Role",
+                        "type": "text",
+                        "label": "Role"
+                    },
+                    {
+                        "name": "Company Size",
+                        "type": "text",
+                        "label": "Company Size"
+                    },
+                    {
+                        "name": "Budget Range",
+                        "type": "text",
+                        "label": "Budget Range"
+                    },
+                    {
+                        "name": "Country",
+                        "type": "text",
+                        "label": "Country"
+                    },
+                    {
+                        "name": "Territory",
+                        "type": "text",
+                        "label": "Territory"
+                    },
+                    {
+                        "name": "Primary Challenge",
+                        "type": "text",
+                        "label": "Primary Challenge",
+                        "multiline": true
+                    },
+                    {
+                        "name": "ICP Score",
+                        "type": "number",
+                        "label": "ICP Score"
+                    },
+                    {
+                        "name": "Intent Score",
+                        "type": "number",
+                        "label": "Intent Score"
+                    },
+                    {
+                        "name": "Priority Tier",
+                        "type": "text",
+                        "label": "Priority Tier"
+                    },
+                    {
+                        "name": "Recommended Action",
+                        "type": "text",
+                        "label": "Recommended Action"
+                    },
+                    {
+                        "name": "AI Reasoning",
+                        "type": "text",
+                        "label": "AI Reasoning",
+                        "multiline": true
+                    },
+                    {
+                        "name": "Assigned Rep",
+                        "type": "text",
+                        "label": "Assigned Rep"
+                    },
+                    {
+                        "name": "Status",
+                        "type": "text",
+                        "label": "Status"
+                    },
+                    {
+                        "name": "Submitted At",
+                        "type": "text",
+                        "label": "Submitted At"
+                    },
+                    {
+                        "name": "Created At",
+                        "type": "date",
+                        "label": "Created At"
+                    }
+                ]
+            }
+        },
+        {
+            "id": 13,
+            "module": "airtable:ActionCreateRecord",
+            "version": 3,
+            "parameters": {
+                "__IMTCONN__": 8215058
+            },
+            "filter": {
+                "name": "Dedupe Filter",
+                "conditions": [
+                    [
+                        {
+                            "a": "{{11.Email}}",
+                            "o": "notexist"
+                        }
+                    ]
+                ]
+            },
+            "mapper": {
+                "base": "appXXXXXXXXXXXXXX",
+                "table": "tblXXXXXXXXXXXXXX",
+                "record": {
+                    "fld3eW1rEplt9Vhl5": "{{8.reasoning}}",
+                    "fld7fIsljFdySRf2k": "{{3.company_size}}",
+                    "fldEpxJzfHLEidBxT": "{{9.rep_handle}}",
+                    "fldMjt1dseqAqsmKz": "New",
+                    "fldSAiJUgWdRjqOcD": "{{8.icp_score}}",
+                    "fldT7TvVOcmno4fRN": "{{3.lead_email}}",
+                    "fldWzneYsdVgiHLtp": "{{8.priority_tier}}",
+                    "fldXJ8TK6nD8H5WVP": "{{3.company}}",
+                    "fldYcM6JBLivrLhBe": "{{8.recommended_action}}",
+                    "fldd0Zm4tYr1Z19G2": "{{3.lead_name}}",
+                    "flddhbM2OTM8vZIBe": "{{3.country}}",
+                    "fldfirNpUdFAzsYZ3": "{{3.challenge}}",
+                    "fldfqJkc4No7PESYg": "{{8.intent_score}}",
+                    "fldg6TZjxHEmIkFIb": "{{3.lead_id}}",
+                    "fldi7uzHRMv2Q9oWu": "{{3.budget}}",
+                    "fldkVxfDhQqGw549X": "{{2.submitted_at}}",
+                    "fldnGXZa3kpD6ONzG": "{{3.role}}",
+                    "fldrPhzeyVxh0tVMq": "{{9.territory_label}}"
+                },
+                "typecast": false,
+                "useColumnId": false
+            },
+            "metadata": {
+                "designer": {
+                    "x": 1923,
+                    "y": 4
+                },
+                "restore": {
+                    "expect": {
+                        "base": {
+                            "label": "Lead Scoring CRM"
+                        },
+                        "table": {
+                            "label": "Leads",
+                            "nested": [
+                                {
+                                    "name": "record",
+                                    "spec": [
+                                        {
+                                            "name": "fldg6TZjxHEmIkFIb",
+                                            "type": "text",
+                                            "label": "Lead ID"
+                                        },
+                                        {
+                                            "name": "fldd0Zm4tYr1Z19G2",
+                                            "type": "text",
+                                            "label": "Name"
+                                        },
+                                        {
+                                            "name": "fldT7TvVOcmno4fRN",
+                                            "type": "text",
+                                            "label": "Email"
+                                        },
+                                        {
+                                            "name": "fldXJ8TK6nD8H5WVP",
+                                            "type": "text",
+                                            "label": "Company"
+                                        },
+                                        {
+                                            "name": "fldnGXZa3kpD6ONzG",
+                                            "type": "text",
+                                            "label": "Role"
+                                        },
+                                        {
+                                            "mode": "edit",
+                                            "name": "fld7fIsljFdySRf2k",
+                                            "type": "select",
+                                            "label": "Company Size",
+                                            "dynamic": true,
+                                            "options": [],
+                                            "validate": false
+                                        },
+                                        {
+                                            "mode": "edit",
+                                            "name": "fldi7uzHRMv2Q9oWu",
+                                            "type": "select",
+                                            "label": "Budget Range",
+                                            "dynamic": true,
+                                            "options": [],
+                                            "validate": false
+                                        },
+                                        {
+                                            "name": "flddhbM2OTM8vZIBe",
+                                            "type": "text",
+                                            "label": "Country"
+                                        },
+                                        {
+                                            "mode": "edit",
+                                            "name": "fldrPhzeyVxh0tVMq",
+                                            "type": "select",
+                                            "label": "Territory",
+                                            "dynamic": true,
+                                            "options": [],
+                                            "validate": false
+                                        },
+                                        {
+                                            "name": "fldfirNpUdFAzsYZ3",
+                                            "type": "text",
+                                            "label": "Primary Challenge",
+                                            "multiline": true
+                                        },
+                                        {
+                                            "name": "fldSAiJUgWdRjqOcD",
+                                            "type": "number",
+                                            "label": "ICP Score"
+                                        },
+                                        {
+                                            "name": "fldfqJkc4No7PESYg",
+                                            "type": "number",
+                                            "label": "Intent Score"
+                                        },
+                                        {
+                                            "mode": "edit",
+                                            "name": "fldWzneYsdVgiHLtp",
+                                            "type": "select",
+                                            "label": "Priority Tier",
+                                            "dynamic": true,
+                                            "options": [],
+                                            "validate": false
+                                        },
+                                        {
+                                            "name": "fldYcM6JBLivrLhBe",
+                                            "type": "text",
+                                            "label": "Recommended Action"
+                                        },
+                                        {
+                                            "name": "fld3eW1rEplt9Vhl5",
+                                            "type": "text",
+                                            "label": "AI Reasoning",
+                                            "multiline": true
+                                        },
+                                        {
+                                            "name": "fldEpxJzfHLEidBxT",
+                                            "type": "text",
+                                            "label": "Assigned Rep"
+                                        },
+                                        {
+                                            "mode": "edit",
+                                            "name": "fldMjt1dseqAqsmKz",
+                                            "type": "select",
+                                            "label": "Status",
+                                            "dynamic": true,
+                                            "options": [],
+                                            "validate": false
+                                        },
+                                        {
+                                            "name": "fldkVxfDhQqGw549X",
+                                            "type": "text",
+                                            "label": "Submitted At"
+                                        }
+                                    ],
+                                    "type": "collection",
+                                    "label": "Record"
+                                }
+                            ]
+                        },
+                        "record": {
+                            "nested": {
+                                "fld7fIsljFdySRf2k": {
+                                    "mode": "edit"
+                                },
+                                "fldMjt1dseqAqsmKz": {
+                                    "mode": "edit"
+                                },
+                                "fldWzneYsdVgiHLtp": {
+                                    "mode": "edit"
+                                },
+                                "fldi7uzHRMv2Q9oWu": {
+                                    "mode": "edit"
+                                },
+                                "fldrPhzeyVxh0tVMq": {
+                                    "mode": "edit"
+                                }
+                            }
+                        },
+                        "typecast": {
+                            "mode": "chose"
+                        },
+                        "useColumnId": {
+                            "mode": "chose"
+                        }
+                    },
+                    "parameters": {
+                        "__IMTCONN__": {
+                            "data": {
+                                "scoped": "true",
+                                "connection": "airtable2"
+                            },
+                            "label": "My Airtable Token or Key connection"
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "__IMTCONN__",
+                        "type": "account:airtable3,airtable2",
+                        "label": "Connection",
+                        "required": true
+                    }
+                ],
+                "expect": [
+                    {
+                        "name": "base",
+                        "type": "select",
+                        "label": "Base",
+                        "required": true
+                    },
+                    {
+                        "name": "typecast",
+                        "type": "boolean",
+                        "label": "Smart links",
+                        "required": true
+                    },
+                    {
+                        "name": "useColumnId",
+                        "type": "boolean",
+                        "label": "Use Column ID",
+                        "required": true
+                    },
+                    {
+                        "name": "table",
+                        "type": "select",
+                        "label": "Table",
+                        "required": true
+                    },
+                    {
+                        "name": "record",
+                        "spec": [
+                            {
+                                "name": "fldg6TZjxHEmIkFIb",
+                                "type": "text",
+                                "label": "Lead ID"
+                            },
+                            {
+                                "name": "fldd0Zm4tYr1Z19G2",
+                                "type": "text",
+                                "label": "Name"
+                            },
+                            {
+                                "name": "fldT7TvVOcmno4fRN",
+                                "type": "text",
+                                "label": "Email"
+                            },
+                            {
+                                "name": "fldXJ8TK6nD8H5WVP",
+                                "type": "text",
+                                "label": "Company"
+                            },
+                            {
+                                "name": "fldnGXZa3kpD6ONzG",
+                                "type": "text",
+                                "label": "Role"
+                            },
+                            {
+                                "mode": "edit",
+                                "name": "fld7fIsljFdySRf2k",
+                                "type": "select",
+                                "label": "Company Size"
+                            },
+                            {
+                                "mode": "edit",
+                                "name": "fldi7uzHRMv2Q9oWu",
+                                "type": "select",
+                                "label": "Budget Range"
+                            },
+                            {
+                                "name": "flddhbM2OTM8vZIBe",
+                                "type": "text",
+                                "label": "Country"
+                            },
+                            {
+                                "mode": "edit",
+                                "name": "fldrPhzeyVxh0tVMq",
+                                "type": "select",
+                                "label": "Territory"
+                            },
+                            {
+                                "name": "fldfirNpUdFAzsYZ3",
+                                "type": "text",
+                                "label": "Primary Challenge"
+                            },
+                            {
+                                "name": "fldSAiJUgWdRjqOcD",
+                                "type": "number",
+                                "label": "ICP Score"
+                            },
+                            {
+                                "name": "fldfqJkc4No7PESYg",
+                                "type": "number",
+                                "label": "Intent Score"
+                            },
+                            {
+                                "mode": "edit",
+                                "name": "fldWzneYsdVgiHLtp",
+                                "type": "select",
+                                "label": "Priority Tier"
+                            },
+                            {
+                                "name": "fldYcM6JBLivrLhBe",
+                                "type": "text",
+                                "label": "Recommended Action"
+                            },
+                            {
+                                "name": "fld3eW1rEplt9Vhl5",
+                                "type": "text",
+                                "label": "AI Reasoning"
+                            },
+                            {
+                                "name": "fldEpxJzfHLEidBxT",
+                                "type": "text",
+                                "label": "Assigned Rep"
+                            },
+                            {
+                                "mode": "edit",
+                                "name": "fldMjt1dseqAqsmKz",
+                                "type": "select",
+                                "label": "Status"
+                            },
+                            {
+                                "name": "fldkVxfDhQqGw549X",
+                                "type": "text",
+                                "label": "Submitted At"
+                            }
+                        ],
+                        "type": "collection",
+                        "label": "Record"
+                    }
+                ],
+                "interface": [
+                    {
+                        "name": "id",
+                        "type": "text",
+                        "label": "ID"
+                    },
+                    {
+                        "name": "createdTime",
+                        "type": "date",
+                        "label": "Created Time"
+                    },
+                    {
+                        "name": "Lead ID",
+                        "type": "text",
+                        "label": "Lead ID"
+                    },
+                    {
+                        "name": "Name",
+                        "type": "text",
+                        "label": "Name"
+                    },
+                    {
+                        "name": "Email",
+                        "type": "text",
+                        "label": "Email"
+                    },
+                    {
+                        "name": "Company",
+                        "type": "text",
+                        "label": "Company"
+                    },
+                    {
+                        "name": "Role",
+                        "type": "text",
+                        "label": "Role"
+                    },
+                    {
+                        "name": "Company Size",
+                        "type": "text",
+                        "label": "Company Size"
+                    },
+                    {
+                        "name": "Budget Range",
+                        "type": "text",
+                        "label": "Budget Range"
+                    },
+                    {
+                        "name": "Country",
+                        "type": "text",
+                        "label": "Country"
+                    },
+                    {
+                        "name": "Territory",
+                        "type": "text",
+                        "label": "Territory"
+                    },
+                    {
+                        "name": "Primary Challenge",
+                        "type": "text",
+                        "label": "Primary Challenge",
+                        "multiline": true
+                    },
+                    {
+                        "name": "ICP Score",
+                        "type": "number",
+                        "label": "ICP Score"
+                    },
+                    {
+                        "name": "Intent Score",
+                        "type": "number",
+                        "label": "Intent Score"
+                    },
+                    {
+                        "name": "Priority Tier",
+                        "type": "text",
+                        "label": "Priority Tier"
+                    },
+                    {
+                        "name": "Recommended Action",
+                        "type": "text",
+                        "label": "Recommended Action"
+                    },
+                    {
+                        "name": "AI Reasoning",
+                        "type": "text",
+                        "label": "AI Reasoning",
+                        "multiline": true
+                    },
+                    {
+                        "name": "Assigned Rep",
+                        "type": "text",
+                        "label": "Assigned Rep"
+                    },
+                    {
+                        "name": "Status",
+                        "type": "text",
+                        "label": "Status"
+                    },
+                    {
+                        "name": "Submitted At",
+                        "type": "text",
+                        "label": "Submitted At"
+                    },
+                    {
+                        "name": "Created At",
+                        "type": "date",
+                        "label": "Created At"
+                    }
+                ]
+            }
+        },
+        {
+            "id": 14,
+            "module": "google-email:sendAnEmail",
+            "version": 4,
+            "parameters": {
+                "__IMTCONN__": 8215137
+            },
+            "mapper": {
+                "to": [
+                    "{{2.mappable_answers.`d8351a8e-0321-443d-8d56-c5a9dd86a498`}}"
+                ],
+                "subject": "Thanks for reaching out, {{3.lead_name}} — we'll be in touch",
+                "bodyType": "rawHtml",
+                "content": "<!DOCTYPE html>\r\n<html>\r\n<head>\r\n  <meta charset=\"UTF-8\" />\r\n  <style>\r\n    body      { font-family: Arial, sans-serif; font-size: 15px; color: #1a1a1a; background: #f4f4f4; margin: 0; padding: 0; }\r\n    .wrapper  { max-width: 600px; margin: 32px auto; background: #ffffff; border-radius: 8px; overflow: hidden; }\r\n    .header   { background: #1a1a2e; padding: 32px 40px; }\r\n    .header h1 { color: #ffffff; font-size: 22px; margin: 0; }\r\n    .body     { padding: 32px 40px; }\r\n    .body p   { line-height: 1.6; margin: 0 0 16px; }\r\n    .highlight { background: #f0f4ff; border-left: 4px solid #4f46e5; padding: 16px 20px; border-radius: 4px; margin: 24px 0; }\r\n    .footer   { padding: 24px 40px; border-top: 1px solid #e5e7eb; font-size: 13px; color: #6b7280; }\r\n  </style>\r\n</head>\r\n<body>\r\n  <div class=\"wrapper\">\r\n\r\n    <div class=\"header\">\r\n      <h1>Thanks for getting in touch</h1>\r\n    </div>\r\n\r\n    <div class=\"body\">\r\n      <p>Hi {{3.lead_name}},</p>\r\n\r\n      <p>\r\n        Thanks for submitting your details — we've received your enquiry and a member\r\n        of our team will be reaching out shortly.\r\n      </p>\r\n\r\n      <div class=\"highlight\">\r\n        <strong>Your submission summary:</strong><br /><br />\r\n        🏢 <strong>Company:</strong> {{3.company}} <br />\r\n        👤 <strong>Role:</strong> {{3.role}} <br />\r\n        💰 <strong>Budget:</strong> {{3.budget}} <br />\r\n        💬 <strong>Challenge:</strong> {{3.challenge}}      </div>\r\n\r\n      <p>\r\n        In the meantime, feel free to reply to this email if you have any questions.\r\n      </p>\r\n\r\n      <p>\r\n        Looking forward to connecting,<br />\r\n        <strong>The Sales Team</strong>\r\n      </p>\r\n    </div>\r\n\r\n    <div class=\"footer\">\r\n      You're receiving this email because you submitted a form on our website.\r\n    </div>\r\n\r\n  </div>\r\n</body>\r\n</html>"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 2223,
+                    "y": 4
+                },
+                "restore": {
+                    "parameters": {
+                        "__IMTCONN__": {
+                            "label": "My Gmail connection (automatedglobe@gmail.com)",
+                            "data": {
+                                "scoped": "true",
+                                "connection": "google-email"
+                            }
+                        }
+                    },
+                    "expect": {
+                        "to": {
+                            "mode": "chose",
+                            "items": [
+                                null
+                            ]
+                        },
+                        "bodyType": {
+                            "label": "Raw HTML"
+                        },
+                        "attachments": {
+                            "mode": "chose"
+                        },
+                        "from": {
+                            "mode": "chose"
+                        },
+                        "cc": {
+                            "mode": "chose"
+                        },
+                        "bcc": {
+                            "mode": "chose"
+                        },
+                        "emailHeaders": {
+                            "mode": "chose"
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "__IMTCONN__",
+                        "type": "account:google-email",
+                        "label": "Connection",
+                        "required": true
+                    }
+                ],
+                "expect": [
+                    {
+                        "name": "to",
+                        "type": "array",
+                        "label": "To",
+                        "required": true,
+                        "spec": {
+                            "type": "email",
+                            "label": "Recipient email address",
+                            "required": true,
+                            "validate": true,
+                            "name": "value"
+                        }
+                    },
+                    {
+                        "name": "subject",
+                        "type": "text",
+                        "label": "Subject"
+                    },
+                    {
+                        "name": "bodyType",
+                        "type": "select",
+                        "label": "Body type",
+                        "required": true,
+                        "validate": {
+                            "enum": [
+                                "rawHtml",
+                                "collection"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "attachments",
+                        "type": "array",
+                        "label": "Attachments",
+                        "spec": {
+                            "spec": [
+                                {
+                                    "name": "filename",
+                                    "type": "filename",
+                                    "label": "File name",
+                                    "required": true,
+                                    "semantic": "file:name"
+                                },
+                                {
+                                    "name": "data",
+                                    "type": "buffer",
+                                    "label": "Data",
+                                    "required": true,
+                                    "semantic": "file:data"
+                                }
+                            ],
+                            "type": "collection",
+                            "label": "Attachment",
+                            "name": "value"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "type": "select",
+                        "label": "From"
+                    },
+                    {
+                        "name": "cc",
+                        "type": "array",
+                        "label": "CC recipients",
+                        "spec": {
+                            "type": "email",
+                            "label": "Recipient email address",
+                            "name": "value"
+                        }
+                    },
+                    {
+                        "name": "bcc",
+                        "type": "array",
+                        "label": "BCC recipients",
+                        "spec": {
+                            "type": "email",
+                            "label": "Recipient email address",
+                            "name": "value"
+                        }
+                    },
+                    {
+                        "name": "emailHeaders",
+                        "type": "array",
+                        "label": "Additional email headers",
+                        "spec": {
+                            "spec": [
+                                {
+                                    "name": "key",
+                                    "type": "text",
+                                    "label": "Key",
+                                    "required": true
+                                },
+                                {
+                                    "name": "value",
+                                    "type": "text",
+                                    "label": "Value"
+                                }
+                            ],
+                            "type": "collection",
+                            "label": "Email header",
+                            "name": "value"
+                        }
+                    },
+                    {
+                        "name": "content",
+                        "type": "text",
+                        "label": "Content"
+                    }
+                ]
+            }
+        },
+        {
+            "id": 15,
+            "module": "builtin:BasicRouter",
+            "version": 1,
+            "mapper": null,
+            "metadata": {
+                "designer": {
+                    "x": 2523,
+                    "y": 4
+                }
+            },
+            "routes": [
+                {
+                    "flow": [
+                        {
+                            "id": 16,
+                            "module": "slack:CreateMessage",
+                            "version": 4,
+                            "parameters": {
+                                "__IMTCONN__": 8215190
+                            },
+                            "filter": {
+                                "name": "North America",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{9.territory_label}}",
+                                            "b": "North America",
+                                            "o": "text:equal"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "text": "{{9.slack_message}}",
+                                "parse": false,
+                                "mrkdwn": true,
+                                "channel": "C0AQX8AD7GE",
+                                "channelType": "public",
+                                "channelWType": "list"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 2823,
+                                    "y": -596,
+                                    "name": "North America Sales"
+                                },
+                                "restore": {
+                                    "expect": {
+                                        "parse": {
+                                            "mode": "chose"
+                                        },
+                                        "mrkdwn": {
+                                            "mode": "chose"
+                                        },
+                                        "channel": {
+                                            "mode": "chose",
+                                            "label": "sales-north-america"
+                                        },
+                                        "link_names": {
+                                            "mode": "chose"
+                                        },
+                                        "channelType": {
+                                            "label": "Public channel"
+                                        },
+                                        "channelWType": {
+                                            "label": "Select from the list"
+                                        },
+                                        "unfurl_links": {
+                                            "mode": "chose"
+                                        },
+                                        "unfurl_media": {
+                                            "mode": "chose"
+                                        },
+                                        "reply_broadcast": {
+                                            "mode": "chose"
+                                        }
+                                    },
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "data": {
+                                                "scoped": "true",
+                                                "connection": "slack3"
+                                            },
+                                            "label": "lead_crm_agent"
+                                        }
+                                    }
+                                },
+                                "parameters": [
+                                    {
+                                        "name": "__IMTCONN__",
+                                        "type": "account:slack2,slack3",
+                                        "label": "Connection",
+                                        "required": true
+                                    }
+                                ],
+                                "expect": [
+                                    {
+                                        "name": "channelWType",
+                                        "type": "select",
+                                        "label": "Enter a channel ID or name",
+                                        "required": true,
+                                        "validate": {
+                                            "enum": [
+                                                "manualy",
+                                                "list"
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "text",
+                                        "type": "text",
+                                        "label": "Text"
+                                    },
+                                    {
+                                        "name": "blocks",
+                                        "type": "text",
+                                        "label": "Blocks"
+                                    },
+                                    {
+                                        "name": "thread_ts",
+                                        "type": "text",
+                                        "label": "Thread message ID (time stamp)"
+                                    },
+                                    {
+                                        "name": "reply_broadcast",
+                                        "type": "boolean",
+                                        "label": "Reply broadcast"
+                                    },
+                                    {
+                                        "name": "link_names",
+                                        "type": "boolean",
+                                        "label": "Link names"
+                                    },
+                                    {
+                                        "name": "parse",
+                                        "type": "boolean",
+                                        "label": "Parse message text"
+                                    },
+                                    {
+                                        "name": "mrkdwn",
+                                        "type": "boolean",
+                                        "label": "Use markdown"
+                                    },
+                                    {
+                                        "name": "unfurl_links",
+                                        "type": "boolean",
+                                        "label": "Unfurl primarily text-based content"
+                                    },
+                                    {
+                                        "name": "unfurl_media",
+                                        "type": "boolean",
+                                        "label": "Unfurl media content"
+                                    },
+                                    {
+                                        "name": "icon_emoji",
+                                        "type": "text",
+                                        "label": "Icon emoji"
+                                    },
+                                    {
+                                        "name": "icon_url",
+                                        "type": "url",
+                                        "label": "Icon url"
+                                    },
+                                    {
+                                        "name": "username",
+                                        "type": "text",
+                                        "label": "User name"
+                                    },
+                                    {
+                                        "name": "channelType",
+                                        "type": "select",
+                                        "label": "Channel type",
+                                        "required": true,
+                                        "validate": {
+                                            "enum": [
+                                                "public",
+                                                "private",
+                                                "im",
+                                                "mpim"
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "channel",
+                                        "type": "select",
+                                        "label": "Public channel",
+                                        "required": true
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "flow": [
+                        {
+                            "id": 17,
+                            "module": "slack:CreateMessage",
+                            "version": 4,
+                            "parameters": {
+                                "__IMTCONN__": 8215190
+                            },
+                            "filter": {
+                                "name": "Asia",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{9.territory_label}}",
+                                            "b": "Asia",
+                                            "o": "text:equal"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "text": "{{9.slack_message}}",
+                                "parse": false,
+                                "mrkdwn": true,
+                                "channel": "C0AQHSAJZ63",
+                                "channelType": "public",
+                                "channelWType": "list"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 2823,
+                                    "y": -296,
+                                    "name": "Asia Sales"
+                                },
+                                "restore": {
+                                    "expect": {
+                                        "parse": {
+                                            "mode": "chose"
+                                        },
+                                        "mrkdwn": {
+                                            "mode": "chose"
+                                        },
+                                        "channel": {
+                                            "mode": "chose",
+                                            "label": "sales-asia"
+                                        },
+                                        "link_names": {
+                                            "mode": "chose"
+                                        },
+                                        "channelType": {
+                                            "label": "Public channel"
+                                        },
+                                        "channelWType": {
+                                            "label": "Select from the list"
+                                        },
+                                        "unfurl_links": {
+                                            "mode": "chose"
+                                        },
+                                        "unfurl_media": {
+                                            "mode": "chose"
+                                        },
+                                        "reply_broadcast": {
+                                            "mode": "chose"
+                                        }
+                                    },
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "data": {
+                                                "scoped": "true",
+                                                "connection": "slack3"
+                                            },
+                                            "label": "lead_crm_agent (automatedglobe.slack.com - make)"
+                                        }
+                                    }
+                                },
+                                "parameters": [
+                                    {
+                                        "name": "__IMTCONN__",
+                                        "type": "account:slack2,slack3",
+                                        "label": "Connection",
+                                        "required": true
+                                    }
+                                ],
+                                "expect": [
+                                    {
+                                        "name": "channelWType",
+                                        "type": "select",
+                                        "label": "Enter a channel ID or name",
+                                        "required": true,
+                                        "validate": {
+                                            "enum": [
+                                                "manualy",
+                                                "list"
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "text",
+                                        "type": "text",
+                                        "label": "Text"
+                                    },
+                                    {
+                                        "name": "blocks",
+                                        "type": "text",
+                                        "label": "Blocks"
+                                    },
+                                    {
+                                        "name": "thread_ts",
+                                        "type": "text",
+                                        "label": "Thread message ID (time stamp)"
+                                    },
+                                    {
+                                        "name": "reply_broadcast",
+                                        "type": "boolean",
+                                        "label": "Reply broadcast"
+                                    },
+                                    {
+                                        "name": "link_names",
+                                        "type": "boolean",
+                                        "label": "Link names"
+                                    },
+                                    {
+                                        "name": "parse",
+                                        "type": "boolean",
+                                        "label": "Parse message text"
+                                    },
+                                    {
+                                        "name": "mrkdwn",
+                                        "type": "boolean",
+                                        "label": "Use markdown"
+                                    },
+                                    {
+                                        "name": "unfurl_links",
+                                        "type": "boolean",
+                                        "label": "Unfurl primarily text-based content"
+                                    },
+                                    {
+                                        "name": "unfurl_media",
+                                        "type": "boolean",
+                                        "label": "Unfurl media content"
+                                    },
+                                    {
+                                        "name": "icon_emoji",
+                                        "type": "text",
+                                        "label": "Icon emoji"
+                                    },
+                                    {
+                                        "name": "icon_url",
+                                        "type": "url",
+                                        "label": "Icon url"
+                                    },
+                                    {
+                                        "name": "username",
+                                        "type": "text",
+                                        "label": "User name"
+                                    },
+                                    {
+                                        "name": "channelType",
+                                        "type": "select",
+                                        "label": "Channel type",
+                                        "required": true,
+                                        "validate": {
+                                            "enum": [
+                                                "public",
+                                                "private",
+                                                "im",
+                                                "mpim"
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "channel",
+                                        "type": "select",
+                                        "label": "Public channel",
+                                        "required": true
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "flow": [
+                        {
+                            "id": 18,
+                            "module": "slack:CreateMessage",
+                            "version": 4,
+                            "parameters": {
+                                "__IMTCONN__": 8215190
+                            },
+                            "filter": {
+                                "name": "Europe",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{9.territory_label}}",
+                                            "b": "Europe",
+                                            "o": "text:equal"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "text": "{{9.slack_message}}",
+                                "parse": false,
+                                "mrkdwn": true,
+                                "channel": "C0AR2TKKWTE",
+                                "channelType": "public",
+                                "channelWType": "list"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 2823,
+                                    "y": 4,
+                                    "name": "Europe Sales"
+                                },
+                                "restore": {
+                                    "expect": {
+                                        "parse": {
+                                            "mode": "chose"
+                                        },
+                                        "mrkdwn": {
+                                            "mode": "chose"
+                                        },
+                                        "channel": {
+                                            "mode": "chose",
+                                            "label": "sales-europe"
+                                        },
+                                        "link_names": {
+                                            "mode": "chose"
+                                        },
+                                        "channelType": {
+                                            "label": "Public channel"
+                                        },
+                                        "channelWType": {
+                                            "label": "Select from the list"
+                                        },
+                                        "unfurl_links": {
+                                            "mode": "chose"
+                                        },
+                                        "unfurl_media": {
+                                            "mode": "chose"
+                                        },
+                                        "reply_broadcast": {
+                                            "mode": "chose"
+                                        }
+                                    },
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "data": {
+                                                "scoped": "true",
+                                                "connection": "slack3"
+                                            },
+                                            "label": "lead_crm_agent (automatedglobe.slack.com - make)"
+                                        }
+                                    }
+                                },
+                                "parameters": [
+                                    {
+                                        "name": "__IMTCONN__",
+                                        "type": "account:slack2,slack3",
+                                        "label": "Connection",
+                                        "required": true
+                                    }
+                                ],
+                                "expect": [
+                                    {
+                                        "name": "channelWType",
+                                        "type": "select",
+                                        "label": "Enter a channel ID or name",
+                                        "required": true,
+                                        "validate": {
+                                            "enum": [
+                                                "manualy",
+                                                "list"
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "text",
+                                        "type": "text",
+                                        "label": "Text"
+                                    },
+                                    {
+                                        "name": "blocks",
+                                        "type": "text",
+                                        "label": "Blocks"
+                                    },
+                                    {
+                                        "name": "thread_ts",
+                                        "type": "text",
+                                        "label": "Thread message ID (time stamp)"
+                                    },
+                                    {
+                                        "name": "reply_broadcast",
+                                        "type": "boolean",
+                                        "label": "Reply broadcast"
+                                    },
+                                    {
+                                        "name": "link_names",
+                                        "type": "boolean",
+                                        "label": "Link names"
+                                    },
+                                    {
+                                        "name": "parse",
+                                        "type": "boolean",
+                                        "label": "Parse message text"
+                                    },
+                                    {
+                                        "name": "mrkdwn",
+                                        "type": "boolean",
+                                        "label": "Use markdown"
+                                    },
+                                    {
+                                        "name": "unfurl_links",
+                                        "type": "boolean",
+                                        "label": "Unfurl primarily text-based content"
+                                    },
+                                    {
+                                        "name": "unfurl_media",
+                                        "type": "boolean",
+                                        "label": "Unfurl media content"
+                                    },
+                                    {
+                                        "name": "icon_emoji",
+                                        "type": "text",
+                                        "label": "Icon emoji"
+                                    },
+                                    {
+                                        "name": "icon_url",
+                                        "type": "url",
+                                        "label": "Icon url"
+                                    },
+                                    {
+                                        "name": "username",
+                                        "type": "text",
+                                        "label": "User name"
+                                    },
+                                    {
+                                        "name": "channelType",
+                                        "type": "select",
+                                        "label": "Channel type",
+                                        "required": true,
+                                        "validate": {
+                                            "enum": [
+                                                "public",
+                                                "private",
+                                                "im",
+                                                "mpim"
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "channel",
+                                        "type": "select",
+                                        "label": "Public channel",
+                                        "required": true
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "flow": [
+                        {
+                            "id": 19,
+                            "module": "slack:CreateMessage",
+                            "version": 4,
+                            "parameters": {
+                                "__IMTCONN__": 8215190
+                            },
+                            "filter": {
+                                "name": "General",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{9.territory_label}}",
+                                            "b": "General",
+                                            "o": "text:equal"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "text": "{{9.slack_message}}",
+                                "parse": false,
+                                "mrkdwn": true,
+                                "channel": "C0ARTJ75QSU",
+                                "channelType": "public",
+                                "channelWType": "list"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 2823,
+                                    "y": 304,
+                                    "name": "General Sales"
+                                },
+                                "restore": {
+                                    "expect": {
+                                        "parse": {
+                                            "mode": "chose"
+                                        },
+                                        "mrkdwn": {
+                                            "mode": "chose"
+                                        },
+                                        "channel": {
+                                            "mode": "chose",
+                                            "label": "sales-general"
+                                        },
+                                        "link_names": {
+                                            "mode": "chose"
+                                        },
+                                        "channelType": {
+                                            "label": "Public channel"
+                                        },
+                                        "channelWType": {
+                                            "label": "Select from the list"
+                                        },
+                                        "unfurl_links": {
+                                            "mode": "chose"
+                                        },
+                                        "unfurl_media": {
+                                            "mode": "chose"
+                                        },
+                                        "reply_broadcast": {
+                                            "mode": "chose"
+                                        }
+                                    },
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "data": {
+                                                "scoped": "true",
+                                                "connection": "slack3"
+                                            },
+                                            "label": "lead_crm_agent (automatedglobe.slack.com - make)"
+                                        }
+                                    }
+                                },
+                                "parameters": [
+                                    {
+                                        "name": "__IMTCONN__",
+                                        "type": "account:slack2,slack3",
+                                        "label": "Connection",
+                                        "required": true
+                                    }
+                                ],
+                                "expect": [
+                                    {
+                                        "name": "channelWType",
+                                        "type": "select",
+                                        "label": "Enter a channel ID or name",
+                                        "required": true,
+                                        "validate": {
+                                            "enum": [
+                                                "manualy",
+                                                "list"
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "text",
+                                        "type": "text",
+                                        "label": "Text"
+                                    },
+                                    {
+                                        "name": "blocks",
+                                        "type": "text",
+                                        "label": "Blocks"
+                                    },
+                                    {
+                                        "name": "thread_ts",
+                                        "type": "text",
+                                        "label": "Thread message ID (time stamp)"
+                                    },
+                                    {
+                                        "name": "reply_broadcast",
+                                        "type": "boolean",
+                                        "label": "Reply broadcast"
+                                    },
+                                    {
+                                        "name": "link_names",
+                                        "type": "boolean",
+                                        "label": "Link names"
+                                    },
+                                    {
+                                        "name": "parse",
+                                        "type": "boolean",
+                                        "label": "Parse message text"
+                                    },
+                                    {
+                                        "name": "mrkdwn",
+                                        "type": "boolean",
+                                        "label": "Use markdown"
+                                    },
+                                    {
+                                        "name": "unfurl_links",
+                                        "type": "boolean",
+                                        "label": "Unfurl primarily text-based content"
+                                    },
+                                    {
+                                        "name": "unfurl_media",
+                                        "type": "boolean",
+                                        "label": "Unfurl media content"
+                                    },
+                                    {
+                                        "name": "icon_emoji",
+                                        "type": "text",
+                                        "label": "Icon emoji"
+                                    },
+                                    {
+                                        "name": "icon_url",
+                                        "type": "url",
+                                        "label": "Icon url"
+                                    },
+                                    {
+                                        "name": "username",
+                                        "type": "text",
+                                        "label": "User name"
+                                    },
+                                    {
+                                        "name": "channelType",
+                                        "type": "select",
+                                        "label": "Channel type",
+                                        "required": true,
+                                        "validate": {
+                                            "enum": [
+                                                "public",
+                                                "private",
+                                                "im",
+                                                "mpim"
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "channel",
+                                        "type": "select",
+                                        "label": "Public channel",
+                                        "required": true
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "flow": [
+                        {
+                            "id": 22,
+                            "module": "placeholder:Placeholder",
+                            "filter": null,
+                            "metadata": {
+                                "designer": {
+                                    "x": 2823,
+                                    "y": 604
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "metadata": {
+        "instant": false,
+        "version": 1,
+        "scenario": {
+            "roundtrips": 1,
+            "maxErrors": 3,
+            "autoCommit": true,
+            "autoCommitTriggerLast": true,
+            "sequential": false,
+            "slots": null,
+            "confidential": false,
+            "dataloss": false,
+            "dlq": false,
+            "freshVariables": false
+        },
+        "designer": {
+            "orphans": []
+        },
+        "zone": "us2.make.com",
+        "notes": []
+    }
+}

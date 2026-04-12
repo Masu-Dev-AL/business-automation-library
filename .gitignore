@@ -25,6 +25,8 @@ nul
 # Personal / misc
 CLAUDE.md
 misc/
+studio/
+presentation/
 
 # Claude Code
 .claude/
