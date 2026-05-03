@@ -1,0 +1,18 @@
+FROM mcr.microsoft.com/playwright/python:v1.48.0-jammy
+
+WORKDIR /app
+
+COPY config/requirements-scraper.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Chromium + all system deps are pre-installed in the base image
+RUN playwright install chromium
+
+COPY scripts/py_scraper_api.py .
+COPY scripts/py_scraper_cascade.py .
+COPY scripts/py_scraper_models.py .
+
+EXPOSE 8000
+
+# Single worker — Playwright is not safe to share across processes
+CMD ["uvicorn", "py_scraper_api:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

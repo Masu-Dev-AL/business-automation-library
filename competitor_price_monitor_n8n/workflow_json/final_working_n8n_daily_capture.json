@@ -1,0 +1,1168 @@
+{
+  "name": "Vitamin Monitor — Daily Capture",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e9932950-9da7-440e-b646-93f1cbb9d952",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8b100af8-ed05-45be-8878-3506272c1963",
+              "name": "run_date",
+              "value": "={{ new Date().toISOString().slice(0,10) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "08cdb4d1-9039-4e9c-8676-ca9ba9fe5979",
+      "name": "Set Run Date"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1kPDpfAOg-366Q7miGwnYJVlhO2Tefw0WeS4Q8FJg38s",
+          "mode": "list",
+          "cachedResultName": "competitor_price_monitor_sheets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kPDpfAOg-366Q7miGwnYJVlhO2Tefw0WeS4Q8FJg38s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "products",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kPDpfAOg-366Q7miGwnYJVlhO2Tefw0WeS4Q8FJg38s/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "scrape_allowed",
+              "lookupValue": "yes"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        416,
+        0
+      ],
+      "id": "a93e5d5e-5bf4-4617-ad36-1bbc853c6092",
+      "name": "Read Active Products",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "emmGHRRwwXez1C1O",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c7ff46d4-58f8-4cf7-abee-e9fd3da3405e",
+              "leftValue": "={{ $json.normalization_quality }}",
+              "rightValue": "unresolvable",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        624,
+        0
+      ],
+      "id": "873aba85-ea98-4766-a88a-d2a12d8c72bc",
+      "name": "Normalization Quality Filter"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        832,
+        0
+      ],
+      "id": "744be013-0bf4-4888-8dd8-596a7f45ef41",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://scraper-api:8000/scrape",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $json.url }}"
+            },
+            {
+              "name": "product_id",
+              "value": "={{ $json.product_id }}"
+            },
+            {
+              "name": "requires_browser",
+              "value": "={{ $json.requires_browser }}"
+            },
+            {
+              "name": "allow_llm_fallback",
+              "value": "false"
+            },
+            {
+              "name": "vitamin_hint",
+              "value": "={{ $json.vitamin }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1280,
+        16
+      ],
+      "id": "7920e59f-46ff-4894-8694-0ceafab64e08",
+      "name": "Call Scraper API",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Code node — Parse Scraper API Response\n// Runs after the \"Call Scraper API\" HTTP Request node in both the\n// Onboarding and Daily Capture workflows.\n//\n// Input:  HTTP response from POST /scrape on scraper-api\n// Output: validated fields + normalization_quality + cost metrics\n\nconst response = $input.first().json;\n\n// If the scraper returned a network/fetch error, surface it cleanly\nif (response.error) {\n  return [{\n    json: {\n      ...response,\n      normalization_quality: \"unresolvable\",\n      cost_per_serving: null,\n      cost_per_unit: null,\n      parse_error: false,\n      scraper_error: response.error,\n    }\n  }];\n}\n\nconst price = response.price != null ? parseFloat(response.price) : null;\nconst servings = response.servings_per_container != null\n  ? parseInt(response.servings_per_container, 10)\n  : null;\nconst servingValue = response.serving_size_value != null\n  ? parseFloat(response.serving_size_value)\n  : null;\n\n// Three-tier data quality\nlet normalizationQuality;\nif (price !== null && servings !== null) {\n  normalizationQuality = \"verified\";\n} else if (price !== null || servings !== null) {\n  normalizationQuality = \"partial\";\n} else {\n  normalizationQuality = \"unresolvable\";\n}\n\n// Cost metrics — only meaningful when both price and servings are present\nconst costPerServing = (price !== null && servings !== null && servings > 0)\n  ? parseFloat((price / servings).toFixed(6))\n  : null;\n\nconst costPerUnit = (costPerServing !== null && servingValue !== null && servingValue > 0)\n  ? parseFloat((price / (servings * servingValue)).toFixed(8))\n  : null;\n\nreturn [{\n  json: {\n    product_id: response.product_id,\n    url: response.url,\n    product_name: response.product_name,\n    price,\n    servings_per_container: servings,\n    serving_size_raw: response.serving_size_raw,\n    serving_size_value: servingValue,\n    serving_size_unit: response.serving_size_unit,\n    availability: response.availability || \"unknown\",\n    form: response.form,\n    cost_per_serving: costPerServing,\n    cost_per_unit: costPerUnit,\n    normalization_quality: normalizationQuality,\n    extraction_method: response.extraction_method,\n    extraction_tier: response.extraction_tier,\n    confidence: response.confidence,\n    scraper_version: response.scraper_version,\n    scraper_error: null,\n    parse_error: false,\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1488,
+        16
+      ],
+      "id": "186b2a5a-0e76-4746-a340-e1991327b457",
+      "name": "Parse Scraper Response"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cf7ff24b-7f97-4a6d-86a7-abd3df321c73",
+              "leftValue": "={{ !!$json.scraper_error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1696,
+        16
+      ],
+      "id": "ced3184a-da2e-46c2-94e5-0fee325ea5c9",
+      "name": "IF Error"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1kPDpfAOg-366Q7miGwnYJVlhO2Tefw0WeS4Q8FJg38s",
+          "mode": "list",
+          "cachedResultName": "competitor_price_monitor_sheets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kPDpfAOg-366Q7miGwnYJVlhO2Tefw0WeS4Q8FJg38s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "products",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kPDpfAOg-366Q7miGwnYJVlhO2Tefw0WeS4Q8FJg38s/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "product_id": "={{ $('Loop Over Items').item.json.product_id }}",
+            "consecutive_errors": "={{ (parseInt($json.consecutive_errors || 0) + 1) }}"
+          },
+          "matchingColumns": [
+            "product_id"
+          ],
+          "schema": [
+            {
+              "id": "product_id",
+              "displayName": "product_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "competitor_name",
+              "displayName": "competitor_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "competitor_code",
+              "displayName": "competitor_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "vitamin",
+              "displayName": "vitamin",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "vitamin_code",
+              "displayName": "vitamin_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_name",
+              "displayName": "product_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "form",
+              "displayName": "form",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "variant_notes",
+              "displayName": "variant_notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "requires_browser",
+              "displayName": "requires_browser",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "scrape_allowed",
+              "displayName": "scrape_allowed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "price",
+              "displayName": "price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "servings_per_container",
+              "displayName": "servings_per_container",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "serving_size_raw",
+              "displayName": "serving_size_raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "serving_size_value",
+              "displayName": "serving_size_value",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "serving_size_unit",
+              "displayName": "serving_size_unit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "primary_unit",
+              "displayName": "primary_unit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cost_per_serving",
+              "displayName": "cost_per_serving",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cost_per_unit",
+              "displayName": "cost_per_unit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "normalization_quality",
+              "displayName": "normalization_quality",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "availability",
+              "displayName": "availability",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "extraction_method",
+              "displayName": "extraction_method",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "consecutive_errors",
+              "displayName": "consecutive_errors",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_successful_scrape",
+              "displayName": "last_successful_scrape",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "date_added",
+              "displayName": "date_added",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "added_by",
+              "displayName": "added_by",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1680,
+        -192
+      ],
+      "id": "7b380a08-3c0c-41c4-abf4-363eb5c6e6a1",
+      "name": "Increment Error Counter",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "emmGHRRwwXez1C1O",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1kPDpfAOg-366Q7miGwnYJVlhO2Tefw0WeS4Q8FJg38s",
+          "mode": "list",
+          "cachedResultName": "competitor_price_monitor_sheets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kPDpfAOg-366Q7miGwnYJVlhO2Tefw0WeS4Q8FJg38s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1271278047,
+          "mode": "list",
+          "cachedResultName": "snapshots",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kPDpfAOg-366Q7miGwnYJVlhO2Tefw0WeS4Q8FJg38s/edit#gid=1271278047"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "snapshot_id": "={{ $('Loop Over Items').item.json.product_id + '_' + $('Set Run Date').first().json.run_date.replace(/-/g,'') }}",
+            "product_id": "={{ $('Loop Over Items').item.json.product_id }}",
+            "run_date": "={{ $('Set Run Date').first().json.run_date }}",
+            "price": "={{ $json.price }}",
+            "cost_per_serving": "={{ $json.cost_per_serving }}",
+            "cost_per_unit": "={{ $json.cost_per_unit }}",
+            "availability": "={{ $json.availability }}",
+            "normalization_quality": "={{ $json.normalization_quality }}",
+            "extraction_method": "={{ $json.extraction_method }}",
+            "scraper_version": "={{ $json.scraper_version }}"
+          },
+          "matchingColumns": [
+            "snapshot_id"
+          ],
+          "schema": [
+            {
+              "id": "snapshot_id",
+              "displayName": "snapshot_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "product_id",
+              "displayName": "product_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "run_date",
+              "displayName": "run_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "price",
+              "displayName": "price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cost_per_serving",
+              "displayName": "cost_per_serving",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cost_per_unit",
+              "displayName": "cost_per_unit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "availability",
+              "displayName": "availability",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "normalization_quality",
+              "displayName": "normalization_quality",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "extraction_method",
+              "displayName": "extraction_method",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "scraper_version",
+              "displayName": "scraper_version",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1888,
+        32
+      ],
+      "id": "98a32b5d-5484-49a6-801e-47f553bf88cc",
+      "name": "Append Snapshot",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "emmGHRRwwXez1C1O",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1kPDpfAOg-366Q7miGwnYJVlhO2Tefw0WeS4Q8FJg38s",
+          "mode": "list",
+          "cachedResultName": "competitor_price_monitor_sheets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kPDpfAOg-366Q7miGwnYJVlhO2Tefw0WeS4Q8FJg38s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "products",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kPDpfAOg-366Q7miGwnYJVlhO2Tefw0WeS4Q8FJg38s/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "product_id": "={{ $json.product_id }}",
+            "extraction_method": "={{ $json.extraction_method }}",
+            "consecutive_errors": "0",
+            "last_successful_scrape": "={{ $('Set Run Date').first().json.run_date }}"
+          },
+          "matchingColumns": [
+            "product_id"
+          ],
+          "schema": [
+            {
+              "id": "product_id",
+              "displayName": "product_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "competitor_name",
+              "displayName": "competitor_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "competitor_code",
+              "displayName": "competitor_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "vitamin",
+              "displayName": "vitamin",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "vitamin_code",
+              "displayName": "vitamin_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_name",
+              "displayName": "product_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "form",
+              "displayName": "form",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "variant_notes",
+              "displayName": "variant_notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "requires_browser",
+              "displayName": "requires_browser",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "scrape_allowed",
+              "displayName": "scrape_allowed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "price",
+              "displayName": "price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "servings_per_container",
+              "displayName": "servings_per_container",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "serving_size_raw",
+              "displayName": "serving_size_raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "serving_size_value",
+              "displayName": "serving_size_value",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "serving_size_unit",
+              "displayName": "serving_size_unit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "primary_unit",
+              "displayName": "primary_unit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cost_per_serving",
+              "displayName": "cost_per_serving",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cost_per_unit",
+              "displayName": "cost_per_unit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "normalization_quality",
+              "displayName": "normalization_quality",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "availability",
+              "displayName": "availability",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "extraction_method",
+              "displayName": "extraction_method",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "consecutive_errors",
+              "displayName": "consecutive_errors",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_successful_scrape",
+              "displayName": "last_successful_scrape",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "date_added",
+              "displayName": "date_added",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "added_by",
+              "displayName": "added_by",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2096,
+        32
+      ],
+      "id": "ba912698-819e-484e-98b1-35f5a74b951e",
+      "name": "Update Product Meta",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "emmGHRRwwXez1C1O",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6fe05ad2-045f-44a5-882a-8fd9516244ec",
+              "name": "url",
+              "value": "={{ $json.url }}",
+              "type": "string"
+            },
+            {
+              "id": "6a296ef7-533f-4423-81be-59f5d5e94e54",
+              "name": "product_id",
+              "value": "={{ $json.product_id }}",
+              "type": "string"
+            },
+            {
+              "id": "022a59ec-efcd-4f4c-b084-f9087a651c5f",
+              "name": "requires_browser",
+              "value": "={{ $json.requires_browser === 'TRUE' || $json.requires_browser === true }}",
+              "type": "string"
+            },
+            {
+              "id": "657fa514-ad5f-4490-84df-d81dc926537e",
+              "name": "vitamin",
+              "value": "={{ $json.vitamin }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1088,
+        16
+      ],
+      "id": "0b582dd6-5e75-4706-8159-014790a21cb0",
+      "name": "Edit Fields"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Run Date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Run Date": {
+      "main": [
+        [
+          {
+            "node": "Read Active Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Active Products": {
+      "main": [
+        [
+          {
+            "node": "Normalization Quality Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalization Quality Filter": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Scraper API": {
+      "main": [
+        [
+          {
+            "node": "Parse Scraper Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Scraper Response": {
+      "main": [
+        [
+          {
+            "node": "IF Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Error": {
+      "main": [
+        [
+          {
+            "node": "Increment Error Counter",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Increment Error Counter": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Snapshot": {
+      "main": [
+        [
+          {
+            "node": "Update Product Meta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Product Meta": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Call Scraper API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "4a809f99-14c4-46cc-9b73-72d571b8cb9a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cbb47820c05d97ce2918d6dea9c27bb3ede1c1d1feb60177823ceb3663e650a4"
+  },
+  "id": "Lb5HX6SFY5r0Mwnh",
+  "tags": []
+}

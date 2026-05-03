@@ -1,0 +1,616 @@
+{
+  "name": "Vitamin Monitor — Weekly Analysis",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * 1"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "4cc105bd-198c-482c-ae24-6e1d60666b42",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1kPDpfAOg-366Q7miGwnYJVlhO2Tefw0WeS4Q8FJg38s",
+          "mode": "list",
+          "cachedResultName": "competitor_price_monitor_sheets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kPDpfAOg-366Q7miGwnYJVlhO2Tefw0WeS4Q8FJg38s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "products",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kPDpfAOg-366Q7miGwnYJVlhO2Tefw0WeS4Q8FJg38s/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "scrape_allowed",
+              "lookupValue": "yes"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        416,
+        -128
+      ],
+      "id": "2d80f879-9958-4a5e-9276-1738d3022223",
+      "name": "Read Products Sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "emmGHRRwwXez1C1O",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f8c7f184-eddf-45f2-9a9e-a37f386c610d",
+              "name": "run_date",
+              "value": "={{ new Date().toISOString().slice(0,10) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "db8e5192-2573-4382-afd0-81c3d14226d9",
+      "name": "Set Run Start"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1kPDpfAOg-366Q7miGwnYJVlhO2Tefw0WeS4Q8FJg38s",
+          "mode": "list",
+          "cachedResultName": "competitor_price_monitor_sheets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kPDpfAOg-366Q7miGwnYJVlhO2Tefw0WeS4Q8FJg38s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1271278047,
+          "mode": "list",
+          "cachedResultName": "snapshots",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kPDpfAOg-366Q7miGwnYJVlhO2Tefw0WeS4Q8FJg38s/edit#gid=1271278047"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        416,
+        80
+      ],
+      "id": "2434a365-4157-4713-bbd4-2b0b60be316b",
+      "name": "Read Snapshots",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "emmGHRRwwXez1C1O",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        608,
+        -16
+      ],
+      "id": "6640209e-81c1-441e-8738-951ad3f127ae",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Code node — Detect Price Changes\n// Runs in the Weekly Analysis workflow after n8n_aggregate_snapshots.js.\n//\n// Input:  one item from Aggregate Snapshots node (products array with 7-day history)\n// Output: array of change records — one item per detected change across all products\n//         Returns empty array if no changes detected (triggers IF node downstream).\n\nconst { products } = $input.first().json;\nconst now = new Date().toISOString();\nconst changes = [];\n\nfor (const p of products) {\n  if (!p.product_id) continue;\n\n  const base = {\n    timestamp: now,\n    product_id: p.product_id,\n    competitor_name: p.competitor_name,\n    vitamin: p.vitamin,\n    product_name: p.product_name,\n    normalization_quality: p.normalization_quality,\n  };\n\n  // Price change — threshold 0.1% to filter floating-point noise\n  if (p.price_latest !== null && p.price_baseline !== null && p.price_delta_pct !== null) {\n    if (Math.abs(p.price_delta_pct) >= 0.1) {\n      changes.push({\n        ...base,\n        change_type: 'price_change',\n        value_before: Number(p.price_baseline).toFixed(2),\n        value_after: Number(p.price_latest).toFixed(2),\n        pct_delta: p.price_delta_pct,\n      });\n    }\n  }\n\n  // Cost-per-serving change — verified quality only, threshold 0.1%\n  if (\n    p.cps_latest !== null &&\n    p.cps_baseline !== null &&\n    p.cps_delta_pct !== null &&\n    p.normalization_quality === 'verified'\n  ) {\n    if (Math.abs(p.cps_delta_pct) >= 0.1) {\n      changes.push({\n        ...base,\n        change_type: 'cost_per_serving_change',\n        value_before: Number(p.cps_baseline).toFixed(4),\n        value_after: Number(p.cps_latest).toFixed(4),\n        pct_delta: p.cps_delta_pct,\n      });\n    }\n  }\n\n  // Availability change — compare oldest vs latest snapshot in the 7-day window\n  const snapDates = Object.keys(p.snapshots_by_day || {}).sort();\n  if (snapDates.length >= 2) {\n    const firstAvail = p.snapshots_by_day[snapDates[0]].availability;\n    const lastAvail = p.snapshots_by_day[snapDates[snapDates.length - 1]].availability;\n    if (firstAvail && lastAvail && firstAvail !== lastAvail) {\n      changes.push({\n        ...base,\n        change_type: 'availability_change',\n        value_before: firstAvail,\n        value_after: lastAvail,\n        pct_delta: null,\n      });\n    }\n  }\n}\n\n// Return one item per change; or a single no-changes sentinel so the IF node works\nif (changes.length === 0) {\n  return [{ json: { no_changes: true } }];\n}\n\nreturn changes.map(c => ({ json: c }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        -16
+      ],
+      "id": "7bd7495f-cca1-412f-bc87-4c16005d2679",
+      "name": "Detect Changes"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Code node — Aggregate Snapshots for Weekly Analysis\n// Runs in the Weekly Analysis workflow after reading the products sheet\n// and the last-7-days slice of the snapshots sheet.\n//\n// Input (from two preceding nodes, accessed via node name):\n//   $('Read Products Sheet').all()   — product registry\n//   $('Read Snapshots').all()        — snapshot rows (last 7 days)\n//\n// Output: one item containing:\n//   products         — enriched product list with 7-day history attached\n//   summary_table_md — markdown table for Claude prompt\n//   run_stats        — counts for the analysis tab\n\nconst products = $('Read Products Sheet').all().map(i => i.json);\nconst snapshots = $('Read Snapshots').all().map(i => i.json);\n\n// Index snapshots by product_id → sorted array of {run_date, price, cost_per_serving, availability}\nconst snapshotsByProduct = {};\nfor (const snap of snapshots) {\n  const pid = snap.product_id;\n  if (!pid) continue;\n  if (!snapshotsByProduct[pid]) snapshotsByProduct[pid] = [];\n  snapshotsByProduct[pid].push({\n    run_date: snap.run_date,\n    price: snap.price != null ? parseFloat(snap.price) : null,\n    cost_per_serving: snap.cost_per_serving != null ? parseFloat(snap.cost_per_serving) : null,\n    availability: snap.availability || \"unknown\",\n    normalization_quality: snap.normalization_quality || \"unresolvable\",\n  });\n}\n\n// Sort each product's snapshots chronologically\nfor (const pid of Object.keys(snapshotsByProduct)) {\n  snapshotsByProduct[pid].sort((a, b) => a.run_date.localeCompare(b.run_date));\n}\n\n// Enrich products with their snapshot history and computed deltas\nconst enrichedProducts = [];\nfor (const product of products) {\n  const pid = product.product_id;\n  if (!pid) continue;\n\n  const history = snapshotsByProduct[pid] || [];\n  const latest = history[history.length - 1] || null;\n  const baseline = history[0] || null;  // oldest in 7-day window = comparison point\n\n  let priceLatest = latest?.price ?? null;\n  let priceBaseline = baseline?.price ?? null;\n  let priceDeltaPct = null;\n  if (priceLatest !== null && priceBaseline !== null && priceBaseline > 0) {\n    priceDeltaPct = parseFloat(((priceLatest - priceBaseline) / priceBaseline * 100).toFixed(2));\n  }\n\n  let cpsLatest = latest?.cost_per_serving ?? null;\n  let cpsBaseline = baseline?.cost_per_serving ?? null;\n  let cpsDeltaPct = null;\n  if (cpsLatest !== null && cpsBaseline !== null && cpsBaseline > 0) {\n    cpsDeltaPct = parseFloat(((cpsLatest - cpsBaseline) / cpsBaseline * 100).toFixed(2));\n  }\n\n  // Build snapshots_by_day map for the table\n  const snapshotsByDay = {};\n  for (const snap of history) {\n    snapshotsByDay[snap.run_date] = snap;\n  }\n\n  enrichedProducts.push({\n    product_id: pid,\n    competitor_name: product.competitor_name,\n    vitamin: product.vitamin,\n    vitamin_code: product.vitamin_code,\n    product_name: product.product_name,\n    normalization_quality: product.normalization_quality,\n    snapshots_by_day: snapshotsByDay,\n    days_with_data: history.length,\n    price_latest: priceLatest,\n    price_baseline: priceBaseline,\n    price_delta_pct: priceDeltaPct,\n    cps_latest: cpsLatest,\n    cps_baseline: cpsBaseline,\n    cps_delta_pct: cpsDeltaPct,\n    latest_availability: latest?.availability ?? \"unknown\",\n    latest_date: latest?.run_date ?? null,\n  });\n}\n\n// Collect all unique run dates in the window (for table columns)\nconst allDates = [...new Set(snapshots.map(s => s.run_date))].sort();\nconst dateHeaders = allDates.map(d => d.slice(5));  // MM-DD for column headers\n\n// Build markdown summary table (cost_per_serving, formatted as $X.XXXX)\nconst headerRow = `| Product | ${dateHeaders.join(' | ')} | Δ% |`;\nconst separatorRow = `|---|${'---|'.repeat(dateHeaders.length + 1)}`;\nconst dataRows = enrichedProducts.map(p => {\n  const cells = allDates.map(d => {\n    const snap = p.snapshots_by_day[d];\n    if (!snap || snap.cost_per_serving === null) return '—';\n    return '$' + snap.cost_per_serving.toFixed(4);\n  });\n  const deltaStr = p.cps_delta_pct !== null\n    ? (p.cps_delta_pct >= 0 ? '+' : '') + p.cps_delta_pct + '%'\n    : '—';\n  const label = `${p.competitor_name} ${p.vitamin_code}`;\n  return `| ${label} | ${cells.join(' | ')} | ${deltaStr} |`;\n});\n\nconst summaryTableMd = [headerRow, separatorRow, ...dataRows].join('\\n');\n\n// Run stats\nconst totalProducts = enrichedProducts.length;\nconst productsWithData = enrichedProducts.filter(p => p.days_with_data > 0).length;\nconst productsWithChange = enrichedProducts.filter(\n  p => p.price_delta_pct !== null && Math.abs(p.price_delta_pct) >= 0.1\n).length;\n\nreturn [{\n  json: {\n    products: enrichedProducts,\n    summary_table_md: summaryTableMd,\n    all_dates: allDates,\n    run_stats: {\n      total_products: totalProducts,\n      products_with_data: productsWithData,\n      products_with_change: productsWithChange,\n      date_range_start: allDates[0] || null,\n      date_range_end: allDates[allDates.length - 1] || null,\n    },\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        -16
+      ],
+      "id": "5f511656-71a0-44f9-93a4-64cc8f142001",
+      "name": "Aggregate Snapshots"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d533c578-fd32-4cdf-9181-e7307d9f9303",
+              "leftValue": "={{ !$input.first().json.no_changes }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1168,
+        -16
+      ],
+      "id": "a2e81148-2d42-48a9-99f4-134093d7e950",
+      "name": "IF Any Changes"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt_text }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are a competitive intelligence analyst. Always respond with valid JSON only, no markdown fences."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1584,
+        -112
+      ],
+      "id": "49cec896-4c5b-4f37-a44f-c98dc68c47dc",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-sonnet-4-6",
+          "mode": "list",
+          "cachedResultName": "Claude Sonnet 4.6"
+        },
+        "options": {
+          "maxTokensToSample": 1500
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        1584,
+        48
+      ],
+      "id": "e2b7bb8c-ab2d-4ad6-b4d5-70b522bf0daa",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "4L3gnishAeK8tN6J",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build Claude Input\n// Gathers all change records from Detect Changes + aggregated data from Aggregate Snapshots\n// Outputs a single item with prompt_text ready for the LLM Chain\n\nconst allChanges = $input.all().map(i => i.json);\nconst agg = $('Aggregate Snapshots').first().json;\n\nconst products = agg.products || [];\n\n// Build a cost-per-serving summary table (markdown)\nconst tableRows = products.map(p => {\n  const price = p.price_latest != null ? `$${Number(p.price_latest).toFixed(2)}` : 'N/A';\n  const cps = p.cps_latest != null ? `$${Number(p.cps_latest).toFixed(4)}` : 'N/A';\n  const trend = p.price_delta_pct != null\n    ? (p.price_delta_pct > 0 ? `▲ ${p.price_delta_pct.toFixed(1)}%` : `▼ ${Math.abs(p.price_delta_pct).toFixed(1)}%`)\n    : '—';\n  return `| ${p.competitor_name} | ${p.product_name || p.product_id} | ${price} | ${cps} | ${trend} |`;\n});\n\nconst summaryTable = [\n  '| Competitor | Product | Current Price | Cost/Serving | 7-Day Change |',\n  '|---|---|---|---|---|',\n  ...tableRows\n].join('\\n');\n\n// Describe each detected change\nconst changeLines = allChanges\n  .filter(c => !c.no_changes)\n  .map(c => {\n    if (c.change_type === 'price_change') {\n      const dir = Number(c.value_after) < Number(c.value_before) ? 'DROP' : 'INCREASE';\n      return `- [${dir}] ${c.competitor_name} — ${c.product_name || c.product_id}: $${c.value_before} → $${c.value_after} (${c.pct_delta > 0 ? '+' : ''}${Number(c.pct_delta).toFixed(1)}%)`;\n    }\n    if (c.change_type === 'cost_per_serving_change') {\n      return `- [COST/SERVING] ${c.competitor_name} — ${c.product_name || c.product_id}: $${c.value_before} → $${c.value_after} per serving`;\n    }\n    if (c.change_type === 'availability_change') {\n      return `- [AVAILABILITY] ${c.competitor_name} — ${c.product_name || c.product_id}: ${c.value_before} → ${c.value_after}`;\n    }\n    return `- [CHANGE] ${JSON.stringify(c)}`;\n  }).join('\\n');\n\nconst dateStart = agg.date_range_start || '(unknown)';\nconst dateEnd = agg.date_range_end || '(unknown)';\nconst totalProducts = products.length;\n\nconst prompt_text = `You are a competitive pricing analyst for a supplement brand that tracks competitor vitamin pricing.\n\nAnalysis period: ${dateStart} to ${dateEnd}\nProducts monitored: ${totalProducts}\n\n## Detected Changes This Week\n${changeLines || 'No changes detected.'}\n\n## Full 7-Day Pricing Snapshot\n${summaryTable}\n\nRespond with a JSON object containing:\n- executive_summary (2–3 sentence strategic overview)\n- significant_changes (array of objects with product_id, change_type, value_before, value_after, pct_delta, strategic_note)\n- market_positioning_insights (lowest_cpp_product, highest_cpp_product, analyst_commentary)\n- recommended_actions (array of {priority, action})`;\n\nreturn [{ json: { prompt_text, change_count: allChanges.filter(c => !c.no_changes).length } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1392,
+        32
+      ],
+      "id": "6f1fea7d-f989-4f9a-ac72-5eb36052b249",
+      "name": "Build Claude Input"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Claude Response\n// Input: LLM Chain output with .text containing JSON string\n// Output: parsed analysis fields + original changes array\n\nconst raw = $input.first().json.text || $input.first().json.output || '';\n\n// Strip markdown fences if present\nconst cleaned = raw.replace(/^```json\\s*/i, '').replace(/```\\s*$/i, '').trim();\n\nlet analysis;\ntry {\n  analysis = JSON.parse(cleaned);\n} catch (e) {\n  return [{ json: { parse_error: true, raw_text: raw, error: e.message } }];\n}\n\nreturn [{\n  json: {\n    executive_summary: analysis.executive_summary || '',\n    significant_changes: analysis.significant_changes || [],\n    market_positioning_insights: analysis.market_positioning_insights || {},\n    recommended_actions: analysis.recommended_actions || [],\n    run_date: new Date().toISOString().slice(0, 10),\n    change_count: (analysis.significant_changes || []).length,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        -112
+      ],
+      "id": "d8831051-bf77-4cdb-bfeb-045d4890bd69",
+      "name": "Parse Claude Response"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1kPDpfAOg-366Q7miGwnYJVlhO2Tefw0WeS4Q8FJg38s",
+          "mode": "list",
+          "cachedResultName": "competitor_price_monitor_sheets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kPDpfAOg-366Q7miGwnYJVlhO2Tefw0WeS4Q8FJg38s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1815003555,
+          "mode": "list",
+          "cachedResultName": "changes",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kPDpfAOg-366Q7miGwnYJVlhO2Tefw0WeS4Q8FJg38s/edit#gid=1815003555"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $json.timestamp }}",
+            "product_id": "={{ $json.product_id }}",
+            "competitor_name": "={{ $json.competitor_name }}",
+            "vitamin": "={{ $json.vitamin }}",
+            "product_name": "={{ $json.product_name }}",
+            "change_type": "={{ $json.change_type }}",
+            "value_before": "={{ $json.value_before }}",
+            "value_after": "={{ $json.value_after }}",
+            "pct_delta": "={{ $json.pct_delta }}",
+            "normalization_quality": "={{ $json.normalization_quality }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_id",
+              "displayName": "product_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "competitor_name",
+              "displayName": "competitor_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "vitamin",
+              "displayName": "vitamin",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_name",
+              "displayName": "product_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "change_type",
+              "displayName": "change_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "value_before",
+              "displayName": "value_before",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "value_after",
+              "displayName": "value_after",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "pct_delta",
+              "displayName": "pct_delta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "normalization_quality",
+              "displayName": "normalization_quality",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1392,
+        -144
+      ],
+      "id": "16a2ec38-8533-4eee-9c75-9bf39042a1d9",
+      "name": "Append to Changes Sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "emmGHRRwwXez1C1O",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\n\nconst changesHtml = (d.significant_changes || []).map(c => {\n  const isPositive = String(c.change_type).includes('INCREASE') || String(c.change_type).includes('RESTORED');\n  const arrow = isPositive ? '▲' : '▼';\n  const color = isPositive ? '#c0392b' : '#27ae60';\n  return `\n    <tr>\n      <td style=\"padding:10px 8px;border-bottom:1px solid #eee;\">${c.product_id}</td>\n      <td style=\"padding:10px 8px;border-bottom:1px solid #eee;\">${c.change_type}</td>\n      <td style=\"padding:10px 8px;border-bottom:1px solid #eee;\">${c.value_before} → ${c.value_after}</td>\n      <td style=\"padding:10px 8px;border-bottom:1px solid #eee;color:${color};font-weight:bold;\">\n        ${c.pct_delta != null ? arrow + ' ' + Math.abs(Number(c.pct_delta)).toFixed(1) + '%' : '—'}\n      </td>\n    </tr>`;\n}).join('');\n\nconst actionsHtml = (d.recommended_actions || []).map(a => {\n  const colors = { HIGH: '#e74c3c', MEDIUM: '#e67e22', LOW: '#7f8c8d' };\n  const bg = colors[a.priority] || '#7f8c8d';\n  return `<li style=\"margin-bottom:10px;\">\n    <span style=\"background:${bg};color:#fff;font-size:11px;font-weight:bold;padding:2px 7px;border-radius:3px;margin-right:8px;\">${a.priority}</span>\n    ${a.action}\n  </li>`;\n}).join('');\n\nconst insights = d.market_positioning_insights || {};\nconst insightsHtml = insights.analyst_commentary\n  ? `<p style=\"background:#f8f9fa;border-left:4px solid #3498db;padding:12px 16px;margin:0;font-size:14px;line-height:1.6;\">${insights.analyst_commentary}</p>`\n  : '';\n\nconst html = `\n<html><body style=\"font-family:Arial,sans-serif;max-width:680px;margin:auto;color:#333;font-size:14px;\">\n\n  <div style=\"background:#1a1a2e;color:#fff;padding:20px 24px;border-radius:6px 6px 0 0;\">\n    <h2 style=\"margin:0;font-size:20px;\">📊 Vitamin D3 Competitor Pricing Digest</h2>\n    <p style=\"margin:6px 0 0;opacity:0.75;font-size:13px;\">Week of ${d.run_date} · ${d.change_count} change${d.change_count !== 1 ? 's' : ''} detected</p>\n  </div>\n\n  <div style=\"padding:20px 24px;background:#fff;border:1px solid #e0e0e0;border-top:none;\">\n\n    <h3 style=\"color:#1a1a2e;margin-top:0;\">Executive Summary</h3>\n    <p style=\"line-height:1.7;\">${d.executive_summary}</p>\n\n    <h3 style=\"color:#1a1a2e;\">Detected Changes</h3>\n    <table style=\"width:100%;border-collapse:collapse;font-size:13px;\">\n      <thead>\n        <tr style=\"background:#f0f0f5;text-align:left;\">\n          <th style=\"padding:10px 8px;\">Product</th>\n          <th style=\"padding:10px 8px;\">Type</th>\n          <th style=\"padding:10px 8px;\">Before → After</th>\n          <th style=\"padding:10px 8px;\">Δ%</th>\n        </tr>\n      </thead>\n      <tbody>${changesHtml}</tbody>\n    </table>\n\n    ${insightsHtml ? `<h3 style=\"color:#1a1a2e;margin-top:24px;\">Market Positioning</h3>${insightsHtml}` : ''}\n\n    <h3 style=\"color:#1a1a2e;margin-top:24px;\">Recommended Actions</h3>\n    <ul style=\"line-height:1.8;padding-left:20px;\">${actionsHtml}</ul>\n\n    <p style=\"font-size:11px;color:#aaa;margin-top:32px;border-top:1px solid #eee;padding-top:12px;\">\n      Vitamin Price Monitor · Auto-generated ${d.run_date}\n    </p>\n  </div>\n\n</body></html>`;\n\nreturn [{\n  json: {\n    subject: `Vitamin D3 Pricing Digest — ${d.run_date} (${d.change_count} change${d.change_count !== 1 ? 's' : ''})`,\n    html_body: html,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2176,
+        -112
+      ],
+      "id": "27557d6d-5271-4cf7-b9d9-1e3a7b0f0ce4",
+      "name": "Build Email Digest"
+    },
+    {
+      "parameters": {
+        "sendTo": "automatedglobe@gmail.com",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.html_body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2368,
+        -112
+      ],
+      "id": "8d05cfec-d9f7-4185-8fd4-1dc4a2b62691",
+      "name": "Send a message",
+      "webhookId": "eae637c8-008b-4def-ae22-cbc6db2e73fb",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "aFtlTeMZUtrptFXi",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Run Start",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Products Sheet": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Run Start": {
+      "main": [
+        [
+          {
+            "node": "Read Products Sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Snapshots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Snapshots": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Snapshots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Snapshots": {
+      "main": [
+        [
+          {
+            "node": "Detect Changes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect Changes": {
+      "main": [
+        [
+          {
+            "node": "IF Any Changes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Any Changes": {
+      "main": [
+        [
+          {
+            "node": "Build Claude Input",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Append to Changes Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Claude Input": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Parse Claude Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Claude Response": {
+      "main": [
+        [
+          {
+            "node": "Build Email Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Email Digest": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "614ac02f-01ba-4b56-be6e-13bbcd20986c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cbb47820c05d97ce2918d6dea9c27bb3ede1c1d1feb60177823ceb3663e650a4"
+  },
+  "id": "x4Qm8VtfjPTPJ9OC",
+  "tags": []
+}

@@ -1,0 +1,6 @@
+product_id,url,competitor_name,competitor_code,vitamin,vitamin_code,product_name,form,variant_notes,requires_browser,scrape_allowed,price,servings_per_container,serving_size_raw,serving_size_value,serving_size_unit,primary_unit,cost_per_serving,cost_per_unit,normalization_quality,availability,extraction_method,consecutive_errors,last_successful_scrape,date_added,added_by
+,https://www.nowfoods.com/products/supplements/vitamin-d3-1000-iu-softgels,NOW Foods,NOW,Vitamin D3,D3,,softgel,,FALSE,,,,,,,,,,,,,,,2026-04-30,initial
+,https://www.nowfoods.com/products/supplements/vitamin-d3-5000-iu-softgels,NOW Foods,NOW,Vitamin D3,D3,,softgel,,FALSE,,,,,,,,,,,,,,,2026-04-30,initial
+,https://www.lifeextension.com/vitamins-supplements/item01751/vitamin-d3,Life Extension,LE,Vitamin D3,D3,,softgel,,FALSE,,,,,,,,,,,,,,,2026-04-30,initial
+,https://www.lifeextension.com/vitamins-supplements/item01718/vitamin-d3,Life Extension,LE,Vitamin D3,D3,,softgel,,FALSE,,,,,,,,,,,,,,,2026-04-30,initial
+,https://www.thorne.com/products/dp/vitamin-d3,Thorne,THRN,Vitamin D3,D3,,softgel,,FALSE,,,,,,,,,,,,,,,2026-04-30,initial

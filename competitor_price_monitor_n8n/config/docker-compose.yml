@@ -1,0 +1,70 @@
+version: "3.8"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Vitamin Price Monitor — Docker Compose
+#
+# Services:
+#   n8n          — workflow orchestrator (scheduling, Sheets, Gmail, Claude analysis)
+#   scraper-api  — Python FastAPI sidecar (HTTP scraping + price extraction)
+#
+# Traefik is expected to already be running at the host level handling SSL.
+# This compose file sits inside the monitor_net network. Expose n8n to Traefik
+# by adding the appropriate labels below (see TRAEFIK LABELS section).
+#
+# Usage:
+#   cp config/.env.example config/.env   # fill in your credentials
+#   docker compose -f config/docker-compose.yml up -d
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    restart: unless-stopped
+    environment:
+      - N8N_HOST=${N8N_HOST}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://${N8N_HOST}/
+      - GENERIC_TIMEZONE=${TIMEZONE}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      # Passed as n8n environment variables — available in expressions as $env.VAR
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - VITAMIN_MONITOR_RECIPIENT=${VITAMIN_MONITOR_RECIPIENT}
+      - VITAMIN_MONITOR_SHEET_ID=${VITAMIN_MONITOR_SHEET_ID}
+      - SCRAPER_API_URL=http://scraper-api:8000
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - monitor_net
+    depends_on:
+      - scraper-api
+    # ── TRAEFIK LABELS ────────────────────────────────────────────────────────
+    # Uncomment and update if Traefik is your reverse proxy.
+    # Replace 'n8n.your-domain.com' with your actual hostname.
+    # labels:
+    #   - "traefik.enable=true"
+    #   - "traefik.http.routers.n8n.rule=Host(`n8n.your-domain.com`)"
+    #   - "traefik.http.routers.n8n.entrypoints=websecure"
+    #   - "traefik.http.routers.n8n.tls.certresolver=letsencrypt"
+    #   - "traefik.http.services.n8n.loadbalancer.server.port=5678"
+
+  scraper-api:
+    build:
+      context: ..
+      dockerfile: config/Dockerfile.scraper
+    restart: unless-stopped
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - LOG_LEVEL=info
+    networks:
+      - monitor_net
+    # scraper-api is internal only — not exposed to the host or internet.
+    # n8n reaches it via the service name: http://scraper-api:8000
+
+networks:
+  monitor_net:
+    driver: bridge
+
+volumes:
+  n8n_data:
