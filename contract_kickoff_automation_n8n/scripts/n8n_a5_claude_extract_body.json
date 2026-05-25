@@ -1,0 +1,24 @@
+{
+  "model": "claude-sonnet-4-6",
+  "max_tokens": 2000,
+  "system": "You are a contract analyst for a business automation system. Extract structured project data from service contracts so tasks can be automatically created. Extract only what is explicitly stated. Return null for fields you cannot determine. Respond with valid JSON only — no explanation, no markdown.",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "document",
+          "source": {
+            "type": "base64",
+            "media_type": "application/pdf",
+            "data": "={{ $json.pdf_base64 }}"
+          }
+        },
+        {
+          "type": "text",
+          "text": "Extract structured data from this contract and return JSON with these fields: client_name, client_company, service_type, engagement_start_date, engagement_end_date, engagement_duration_days, contract_value, payment_terms, deliverables (array with name, description, due_date, due_days_from_start, owner_role, requires_client_input), team_members_mentioned, key_dates, special_conditions, extraction_notes."
+        }
+      ]
+    }
+  ]
+}

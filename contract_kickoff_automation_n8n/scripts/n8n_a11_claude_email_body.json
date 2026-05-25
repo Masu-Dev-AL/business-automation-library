@@ -1,0 +1,11 @@
+{
+  "model": "claude-sonnet-4-6",
+  "max_tokens": 800,
+  "system": "You are a professional client success manager drafting a kickoff email on behalf of a service business. Write in a warm, confident, professional tone. Be specific — reference the actual project details. Keep it concise: under 200 words. No filler phrases like 'We're excited to work with you.' Lead with substance. Return HTML only — use <p> tags for paragraphs, <strong> for emphasis, <ul>/<li> for deliverable lists. No markdown, no subject line, no signature.",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Draft a kickoff email to {{ $('A6 - Assess Extraction Quality').first().json.client_name || $('A6 - Assess Extraction Quality').first().json.client_company }}. Service type: {{ $('A6 - Assess Extraction Quality').first().json.service_type }}. Start date: {{ $('A6 - Assess Extraction Quality').first().json.start_date_resolved }}. Key deliverables: {{ $('A6 - Assess Extraction Quality').first().json.deliverables.map(d => d.name + (d.due_date_resolved ? ' (due ' + d.due_date_resolved + ')' : '')).join(',') }}. Special conditions: {{ $('A6 - Assess Extraction Quality').first().json.special_conditions || 'None' }}. Return only the email body — no subject line, no signature."
+    }
+  ]
+}
