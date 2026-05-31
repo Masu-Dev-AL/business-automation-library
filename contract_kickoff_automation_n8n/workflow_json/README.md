@@ -6,7 +6,7 @@ This folder holds the exported n8n workflow definitions once built.
 
 | File | Workflow | Description |
 |------|----------|-------------|
-| `contract-kickoff-main.json` | Workflow A | Main contract ingestion — PandaDoc webhook through kickoff email |
+| `contract-kickoff-main.json` | Workflow A | Main contract ingestion — DocuSign Connect webhook through kickoff email |
 | `contract-kickoff-reprocess.json` | Workflow B | Manual reprocess — retry a failed or insufficient contract |
 
 ## How to Export from n8n

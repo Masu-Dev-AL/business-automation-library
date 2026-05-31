@@ -10,9 +10,9 @@ I'm building the **Smart Contract-to-Kickoff Automation** project and need your 
 
 ## What This Project Does
 
-Listens for a PandaDoc webhook when a contract is signed. Downloads the PDF, extracts the engagement scope using Claude AI, creates an Asana project with tasks and deadlines, and sends a personalized kickoff email — all within 60 seconds of signature.
+Listens for a DocuSign Connect webhook when a contract is signed. Downloads the PDF, passes it directly to Claude AI for extraction, creates an Asana project with tasks and deadlines, and sends a personalized kickoff email — all within 60 seconds of signature.
 
-**Trigger:** PandaDoc `document_state_changed` → `status: completed`
+**Trigger:** DocuSign Connect `envelope-completed` → `status: completed`
 **Stack:** n8n (self-hosted) · Claude API · Asana API · Gmail · Google Sheets
 
 ---
@@ -20,15 +20,15 @@ Listens for a PandaDoc webhook when a contract is signed. Downloads the PDF, ext
 ## Architecture
 
 ```
-PandaDoc (signed contract webhook)
+DocuSign Connect (envelope-completed webhook)
         ↓
 n8n Workflow A
         ↓
 A1. Receive webhook
-A2. Validate secret · extract document_id, client fields
-A3. Download signed PDF via PandaDoc API
-A4. Convert PDF to plain text (pdfminer)
-A5. Claude extracts deliverables, dates, client info → JSON
+A2. Validate & parse — extract envelope_id, client fields
+A3. Download signed PDF via DocuSign REST API
+A4. Claude Analyze Document — extracts deliverables, dates, client info → JSON
+A5b. Parse Claude Response
 A6. Score extraction quality: complete / partial / insufficient
         ↓                    ↓
    [quality ok]        [insufficient]
@@ -55,7 +55,7 @@ All scripts are in `contract_kickoff_automation_n8n/scripts/`. Nothing needs to 
 - `scripts/n8n_create_standard_tasks.js` — paste into node A10
 
 **Config:**
-- `config/.env.example` — all 14 environment variables
+- `config/.env.example` — all environment variables
 - `config/claude_extraction_prompt.md` — standalone extraction prompt for tuning
 
 **Diagrams & docs:**
@@ -68,15 +68,15 @@ All scripts are in `contract_kickoff_automation_n8n/scripts/`. Nothing needs to 
 - `TEST-002` — monthly retainer, no end date
 - `TEST-003` — multi-phase SOW
 - `TEST-004` — legal boilerplate, thin scope (tests insufficient path)
-- `TEST-005` — blank PDF (tests pdf_text_empty path)
+- `TEST-005` — blank PDF (tests image-only path)
 
 ---
 
 ## Build Phases (in order)
 
 1. Google Sheets — create 3 tabs, add headers
-2. PandaDoc — configure webhook + note API key
-3. n8n credentials — PandaDoc, Anthropic, Asana, Gmail, Google Sheets OAuth2
+2. DocuSign — configure Connect webhook + note integration key and account ID
+3. n8n credentials — DocuSign OAuth2, Anthropic, Asana, Gmail, Google Sheets OAuth2
 4. Workflow A — build nodes A1–A15
 5. Workflow B — build reprocess workflow (B1–B3)
 6. End-to-end test with TEST-001
@@ -88,28 +88,27 @@ All scripts are in `contract_kickoff_automation_n8n/scripts/`. Nothing needs to 
 ### `n8n_validate_webhook.js` — paste into node A2
 
 ```javascript
-// n8n Code node: A2 — Validate & Parse Webhook
-// Validates the PandaDoc webhook secret header, extracts key fields,
-// and halts gracefully on non-signing events.
+// n8n Code node: A2 — Validate & Parse Webhook (DocuSign)
+// Extracts key fields from DocuSign Connect envelope-completed event.
+// Halts gracefully on non-signing events.
 
-const secret = $input.first().headers['x-pd-secret'];
-if (secret !== $env.PANDADOC_WEBHOOK_SECRET) {
-  throw new Error('Invalid webhook secret');
+const body = $input.first().json.body;
+
+// Only process completed envelopes
+const status = body.data?.envelopeSummary?.status;
+if (status !== 'completed') {
+  return [];
 }
 
-const body = $input.first().json;
-if (body.data?.status !== 'completed') {
-  return []; // Non-signing event, halt gracefully
-}
+const summary = body.data.envelopeSummary;
+const signer = summary.recipients?.signers?.[0];
 
 return [{
   json: {
-    document_id: body.data.id,
-    client_name: body.data.recipients?.[0]?.last_name
-      ? `${body.data.recipients[0].first_name} ${body.data.recipients[0].last_name}`
-      : body.data.recipients?.[0]?.first_name || 'Unknown',
-    client_email: body.data.recipients?.[0]?.email || null,
-    signed_at: body.data.date_completed || new Date().toISOString()
+    document_id: body.data.envelopeId,
+    client_name: signer?.name || 'Unknown',
+    client_email: signer?.email || null,
+    signed_at: summary.completedDateTime || new Date().toISOString()
   }
 }];
 ```
@@ -182,7 +181,7 @@ return [{
 // Returns the 5 baseline onboarding tasks with due dates relative to start_date_resolved.
 // Each task is tagged task_source: standard for the audit log.
 
-const data = $input.first().json;
+const data = $('A6 - Assess Extraction Quality').first().json;
 const startDate = new Date(data.start_date_resolved);
 
 function addDays(date, days) {
@@ -199,7 +198,7 @@ const standardTasks = [
     task_source: 'standard',
     contract_id: data.contract_id,
     deliverable_ref: 'Onboarding',
-    notes: 'Auto-generated standard onboarding task'
+    notes: 'Assignee Placeholder: Account Manager'
   },
   {
     task_name: 'Schedule kickoff call',
@@ -208,7 +207,7 @@ const standardTasks = [
     task_source: 'standard',
     contract_id: data.contract_id,
     deliverable_ref: 'Onboarding',
-    notes: 'Auto-generated standard onboarding task'
+    notes: 'Assignee Placeholder: Account Manager'
   },
   {
     task_name: 'Set up client workspace/folder',
@@ -217,7 +216,7 @@ const standardTasks = [
     task_source: 'standard',
     contract_id: data.contract_id,
     deliverable_ref: 'Onboarding',
-    notes: 'Auto-generated standard onboarding task'
+    notes: 'Assignee Placeholder: Project Manager'
   },
   {
     task_name: 'Confirm deliverable timeline with client',
@@ -226,7 +225,7 @@ const standardTasks = [
     task_source: 'standard',
     contract_id: data.contract_id,
     deliverable_ref: 'Onboarding',
-    notes: 'Auto-generated standard onboarding task'
+    notes: 'Assignee Placeholder: Project Manager'
   },
   {
     task_name: 'Internal project briefing',
@@ -235,7 +234,7 @@ const standardTasks = [
     task_source: 'standard',
     contract_id: data.contract_id,
     deliverable_ref: 'Onboarding',
-    notes: 'Auto-generated standard onboarding task'
+    notes: 'Assignee Placeholder: Full Team'
   }
 ];
 
@@ -246,7 +245,9 @@ return standardTasks.map(task => ({ json: task }));
 
 ## Claude API Prompts
 
-### A5 — Contract Extraction
+### A4 — Contract Extraction (Analyze Document node)
+
+Configure on the **Anthropic** node in n8n using the **Analyze Document** operation.
 
 **System prompt:**
 ```
@@ -290,14 +291,13 @@ Extract the following structured data from this service contract. Return JSON ma
   "special_conditions": "string — any notable conditions, constraints, or dependencies worth flagging, or null",
   "extraction_notes": "string — anything ambiguous or worth flagging for human review, or null"
 }
-
-Contract text:
-{{ $json.contract_text }}
 ```
 
 ---
 
 ### A11 — Kickoff Email Draft
+
+Configure on the **Anthropic** node in n8n using the **Message a Model** operation.
 
 **System prompt:**
 ```
@@ -333,7 +333,7 @@ Create a single Google Sheet with exactly these 3 tab names.
 
 **Tab: `contracts`**
 ```
-contract_id | pandadoc_document_id | client_name | client_email | service_type | engagement_start_date | engagement_end_date | contract_value | deliverable_count | task_count | asana_project_id | asana_project_url | kickoff_email_sent | extraction_quality | processing_status | failure_reason | processed_at
+contract_id | envelope_id | client_name | client_email | service_type | engagement_start_date | engagement_end_date | contract_value | deliverable_count | asana_project_id | kickoff_email_sent | extraction_quality | processing_status | failure_reason | processed_at
 ```
 
 **Tab: `tasks`**
@@ -354,7 +354,7 @@ timestamp | contract_id | workflow_node | error_type | error_detail | recoverabl
 - Node type: `Webhook`
 - HTTP Method: `POST`
 - Path: `contract-signed`
-- Authentication: `Header Auth` — select the PandaDoc credential (header: `x-pd-secret`)
+- Authentication: None (DocuSign Connect sends a standard POST; validate the payload in A2)
 - Response mode: `When last node finishes`
 
 ### A2. Validate & Parse Webhook
@@ -366,50 +366,35 @@ timestamp | contract_id | workflow_node | error_type | error_detail | recoverabl
 ### A3. Download PDF
 - Node type: `HTTP Request`
 - Method: `GET`
-- URL: `https://api.pandadoc.com/public/v1/documents/{{ $json.document_id }}/download`
-- Authentication: `Header Auth` — PandaDoc credential (header: `Authorization`, value: `API-Key {{ $env.PANDADOC_API_KEY }}`)
+- URL: `https://demo.docusign.net/restapi/v2.1/accounts/{{ $env.DOCUSIGN_ACCOUNT_ID }}/envelopes/{{ $json.document_id }}/documents/combined`
+- Authentication: `DocuSign OAuth2 API` credential
 - Response format: `File`
 - Timeout: `30000` (30s)
 - Connect from: A2
 
-### A4. Convert PDF to Text
-- Node type: `Execute Command`
-- Command:
-```bash
-python3 -c "
-import sys
-from pdfminer.high_level import extract_text
-from io import BytesIO
-pdf_bytes = sys.stdin.buffer.read()
-text = extract_text(BytesIO(pdf_bytes))
-print(text or '')
-" < {{ $binary.data }}
-```
-- If output is empty or under 100 characters: route to A15 (operator alert), log `pdf_text_empty`
-- Add a Code node after A4 to expose the text: `return [{ json: { ...($input.first().json), contract_text: $input.first().json.stdout } }]`
+### A4. Analyze Document (Claude extraction)
+- Node type: `Anthropic`
+- Operation: `Analyze Document`
+- Credential: select your Anthropic API credential
+- Model: `claude-sonnet-4-5`
+- Max Tokens: `4096`
+- Input type: Binary (point to the binary output from A3)
+- System Prompt: paste the A4 system prompt above
+- User Prompt: paste the A4 user prompt above
 - Connect from: A3
 
-### A5. Claude API — Extract Contract
-- Node type: `HTTP Request`
-- Method: `POST`
-- URL: `https://api.anthropic.com/v1/messages`
-- Authentication: `Header Auth` — Anthropic credential (header: `x-api-key`)
-- Headers (add manually): `anthropic-version: 2023-06-01`, `content-type: application/json`
-- Body (JSON):
-```json
-{
-  "model": "claude-sonnet-4-6",
-  "max_tokens": 2000,
-  "system": "<paste A5 system prompt>",
-  "messages": [
-    { "role": "user", "content": "<paste A5 user prompt>" }
-  ]
-}
-```
-- After A5, add a Code node to parse the response:
+### A5b. Parse Claude Response
+- Node type: `Code`
+- Language: JavaScript
+- Code:
 ```javascript
-const text = $input.first().json.content[0].text;
-return [{ json: JSON.parse(text) }];
+let text = $input.first().json.content[0].text;
+text = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+try {
+  return [{ json: JSON.parse(text) }];
+} catch(e) {
+  throw new Error(`Claude response could not be parsed as JSON. Preview: ${text.slice(0, 200)}`);
+}
 ```
 - Connect from: A4
 
@@ -417,7 +402,7 @@ return [{ json: JSON.parse(text) }];
 - Node type: `Code`
 - Language: JavaScript
 - Paste `n8n_assess_extraction_quality.js` (above)
-- Connect from: A5 parse node
+- Connect from: A5b
 
 ### A7. IF — Quality Check
 - Node type: `IF`
@@ -427,76 +412,49 @@ return [{ json: JSON.parse(text) }];
 - Connect from: A6
 
 ### A8. Asana — Create Project
-- Node type: `HTTP Request`
-- Method: `POST`
-- URL: `https://app.asana.com/api/1.0/projects`
-- Authentication: `Header Auth` — Asana credential (header: `Authorization`, value: `Bearer {{ $env.ASANA_ACCESS_TOKEN }}`)
-- Headers: `content-type: application/json`
-- Body (JSON):
-```json
-{
-  "data": {
-    "name": "{{ $json.client_name || $json.client_company }} — {{ $json.service_type }}",
-    "workspace": "{{ $env.ASANA_WORKSPACE_GID }}",
-    "team": "{{ $env.ASANA_TEAM_GID }}",
-    "notes": "Auto-created from signed contract {{ $json.contract_id }}. Start: {{ $json.start_date_resolved }}. Extraction quality: {{ $json.extraction_quality }}.",
-    "color": "light-green",
-    "default_view": "list"
-  }
-}
-```
-- After A8, add a Code node to merge the project GID back:
+- Node type: `Asana`
+- Operation: `Create` → `Project`
+- Credential: select your Asana credential
+- Name: `{{ $json.client_name || $json.client_company }} — {{ $json.service_type }}`
+- Workspace: `{{ $env.ASANA_WORKSPACE_GID }}`
+- Team: `{{ $env.ASANA_TEAM_GID }}`
+- After A8, add a Code node (A8b) to merge the project GID back:
 ```javascript
-const prev = $('A6 node name').first().json;
-return [{ json: { ...prev, asana_project_gid: $input.first().json.data.gid } }];
+const prev = $('A6 - Assess Extraction Quality').first().json;
+return [{ json: { ...prev, asana_project_gid: $input.first().json.gid } }];
 ```
+- After A8b, add a **Split Out** node (A8c) to expand the deliverables array into individual items
 - Connect from: A7 (true branch)
 
 ### A9. Asana — Create Tasks from Deliverables
-- Node type: `Loop Over Items` — iterate over `{{ $json.deliverables }}`
-- Inside the loop, add an `HTTP Request` node:
-  - Method: `POST`
-  - URL: `https://app.asana.com/api/1.0/tasks`
-  - Body (JSON):
-```json
-{
-  "data": {
-    "name": "{{ $json.name }}",
-    "notes": "{{ $json.description || '' }}\n\nOwner role: {{ $json.owner_role || 'Unassigned' }}.\nClient input required: {{ $json.requires_client_input }}.",
-    "projects": ["{{ $('A8 node name').first().json.asana_project_gid }}"],
-    "due_on": "{{ $json.due_date_resolved || '' }}",
-    "workspace": "{{ $env.ASANA_WORKSPACE_GID }}"
-  }
-}
-```
-- Connect from: A8
+- Node type: `splitInBatches` (Loop Over Items), batch size 1
+- Inside the loop, add an `Asana` node:
+  - Operation: `Create` → `Task`
+  - Name: `{{ $json.name }}`
+  - Projects: `{{ $json.asana_project_gid }}`
+  - Due On: `{{ $json.due_date_resolved || '' }}`
+  - Notes: `{{ $json.description || '' }}\n\nOwner role: {{ $json.owner_role || 'Unassigned' }}`
+- Connect from: A8c
 
 ### A10. Asana — Standard Onboarding Tasks
 - Node type: `Code` — paste `n8n_create_standard_tasks.js` (above)
-- This outputs 5 items. Add a `Loop Over Items` → `HTTP Request` after it (same Asana task POST as A9, using `$json.task_name` as `name` and `$json.due_date` as `due_on`)
-- Connect from: A9
+- This outputs 5 items. Add a `splitInBatches` loop → `Asana` node after it (same task creation config as A9, using `$json.task_name` as name and `$json.due_date` as `due_on`)
+- Connect from: A9 (done branch)
 
-### A11. Claude API — Draft Kickoff Email
-- Node type: `HTTP Request`
-- Method: `POST`
-- URL: `https://api.anthropic.com/v1/messages`
-- Same auth and headers as A5
-- Body (JSON):
-```json
-{
-  "model": "claude-sonnet-4-6",
-  "max_tokens": 800,
-  "system": "<paste A11 system prompt>",
-  "messages": [
-    { "role": "user", "content": "<paste A11 user prompt>" }
-  ]
-}
-```
-- After A11, add a Code node to extract the email body:
+### A11. Claude — Draft Kickoff Email
+- Node type: `Anthropic`
+- Operation: `Message a Model`
+- Credential: select your Anthropic API credential
+- Model: `claude-sonnet-4-5`
+- Max Tokens: `800`
+- System Prompt: paste the A11 system prompt above
+- User Prompt: paste the A11 user prompt above
+- After A11, add a Code node (A11b) to extract the email body:
 ```javascript
-return [{ json: { ...$('A6 node name').first().json, email_body: $input.first().json.content[0].text } }];
+const prev = $('A6 - Assess Extraction Quality').first().json;
+return [{ json: { ...prev, email_body: $input.first().json.content[0].text } }];
 ```
-- Connect from: A10
+- Connect from: A10 (done branch)
 
 ### A12. Gmail — Send Kickoff Email
 - Node type: `Gmail` → Send Email
@@ -505,7 +463,7 @@ return [{ json: { ...$('A6 node name').first().json, email_body: $input.first().
 - Subject: `Your {{ $json.service_type }} project is underway — next steps inside`
 - Message: `{{ $json.email_body }}\n\n{{ $env.EMAIL_SIGNATURE }}`
 - CC: `{{ $env.ACCOUNT_MANAGER_EMAIL }}`
-- Connect from: A11
+- Connect from: A11b
 
 ### A13. Google Sheets — Log to contracts tab
 - Node type: `Google Sheets` → Append Row
@@ -513,19 +471,19 @@ return [{ json: { ...$('A6 node name').first().json, email_body: $input.first().
 - Document: select your audit log sheet
 - Sheet: `contracts`
 - Map these columns from `$json`:
-  - `contract_id`, `pandadoc_document_id` (= `document_id`), `client_name`, `client_email`, `service_type`, `engagement_start_date`, `engagement_end_date`, `contract_value`
+  - `contract_id`, `envelope_id` (= `document_id`), `client_name`, `client_email`, `service_type`, `engagement_start_date`, `engagement_end_date`, `contract_value`
   - `deliverable_count` = `{{ $json.deliverables.length }}`
   - `extraction_quality`, `processed_at` = `{{ new Date().toISOString() }}`
-  - `processing_status` = `success` (or `partial_success` / `failed` based on prior node results)
-  - `asana_project_id`, `asana_project_url`, `kickoff_email_sent`
-- Connect from: A12 (and also A15 — this node always runs)
+  - `processing_status` = from A13a prepare node
+  - `asana_project_id`, `kickoff_email_sent`, `failure_reason`
+- Connect from: A12 (and also A15 — this node always runs on both paths)
 
 ### A14. Google Sheets — Log to tasks tab
-- Node type: `Loop Over Items` → `Google Sheets` → Append Row
+- Node type: `splitInBatches` loop → `Google Sheets` → Append Row
 - Sheet: `tasks`
 - Iterate over all created tasks (extracted + standard), mapping:
   - `contract_id`, `task_name`, `assignee_name`, `due_date`, `deliverable_ref`, `task_source`
-  - `task_id` = generate as `{{ $json.contract_id }}-T{{ $itemIndex + 1 }}`
+  - `task_id` = `{{ $json.contract_id }}-D{{ $itemIndex + 1 }}` (extracted) or `{{ $json.contract_id }}-S{{ $itemIndex + 1 }}` (standard)
   - `asana_task_gid` = from Asana response
   - `created_at` = `{{ new Date().toISOString() }}`
 - Connect from: A13
@@ -535,7 +493,7 @@ return [{ json: { ...$('A6 node name').first().json, email_body: $input.first().
 - To: `{{ $env.OPERATOR_EMAIL }}`
 - Subject: `Contract processing failed — manual review needed [{{ $json.contract_id || 'unknown' }}]`
 - Message: include `client_name`, `extraction_quality`, and a link to the errors tab
-- Connect from: A7 (false branch), and from A4 PDF-empty check
+- Connect from: A7 (false branch)
 - Connect to: A13 (so the failure is always logged)
 
 ---
@@ -544,14 +502,15 @@ return [{ json: { ...$('A6 node name').first().json, email_body: $input.first().
 
 ### B1. Manual Trigger
 - Node type: `Manual Trigger` or `Execute Workflow Trigger`
-- Add form fields: `contract_id` (string), `pdf_file_path` (string)
+- Add form fields: `contract_id` (string), `envelope_id` (string)
 
 ### B2. Read contracts sheet
 - Node type: `Google Sheets` → Get Row(s)
 - Filter: `contract_id` = `{{ $json.contract_id }}`
 
 ### B3. Re-run extraction
-- Connect to A4 (Execute Command) — re-run the full pipeline from PDF extraction onward
+- Download PDF again from DocuSign using the stored `envelope_id` (same A3 config)
+- Connect to A4 (Analyze Document) — re-run the full pipeline from PDF extraction onward
 - The contracts sheet row is overwritten (not appended) using `Google Sheets → Update Row`
 
 ---
@@ -562,8 +521,9 @@ Set in n8n: **Settings → Environment Variables** (or `.env` file if Docker-hos
 
 | Variable | Description |
 |----------|-------------|
-| `PANDADOC_WEBHOOK_SECRET` | Shared secret from PandaDoc webhook config |
-| `PANDADOC_API_KEY` | PandaDoc API key (Settings → API) |
+| `DOCUSIGN_ACCOUNT_ID` | DocuSign account ID (Apps & Keys → API Account ID) |
+| `DOCUSIGN_OAUTH_CLIENT_ID` | DocuSign integration key |
+| `DOCUSIGN_OAUTH_CLIENT_SECRET` | DocuSign OAuth2 secret |
 | `ANTHROPIC_API_KEY` | Claude API key (console.anthropic.com) |
 | `ASANA_ACCESS_TOKEN` | Asana personal access token |
 | `ASANA_WORKSPACE_GID` | From Asana URL or GET /workspaces |
@@ -571,7 +531,6 @@ Set in n8n: **Settings → Environment Variables** (or `.env` file if Docker-hos
 | `OPERATOR_EMAIL` | Your email — receives failure alerts |
 | `ACCOUNT_MANAGER_EMAIL` | CC'd on every kickoff email |
 | `EMAIL_SIGNATURE` | Plain text signature appended to client emails |
-| `DOCUSIGN_ACCOUNT_ID` | Phase 4 only |
 | `CLICKUP_API_KEY` | Phase 3 only |
 | `CLICKUP_LIST_ID` | Phase 3 only |
 | `NOTION_DATABASE_ID` | Phase 3 only |

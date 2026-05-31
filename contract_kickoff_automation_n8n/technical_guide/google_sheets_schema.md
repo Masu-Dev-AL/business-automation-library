@@ -11,7 +11,7 @@ Master log of every processed contract. One row per signed document. Written by 
 | Column | Type | Description | Example |
 |--------|------|-------------|---------|
 | `contract_id` | string | Unique ID: `[CLIENT_CODE]-[YYYYMMDD]-[SEQ]` | `ACME-20250601-001` |
-| `pandadoc_document_id` | string | PandaDoc document ID from webhook payload | `msFsKmy2rKBH9Z3s6wr5aP` |
+| `envelope_id` | string | DocuSign envelope ID from Connect webhook payload | `89ada3dd-d386-4e35-af42` |
 | `client_name` | string | Extracted client/company name | `Sarah Chen` |
 | `client_email` | string | Primary client contact email | `sarah@brightfield.com` |
 | `service_type` | string | Extracted engagement type | `Website Redesign` |
@@ -19,9 +19,7 @@ Master log of every processed contract. One row per signed document. Written by 
 | `engagement_end_date` | date | Extracted or inferred end date (ISO), null if none | `2025-08-15` |
 | `contract_value` | number | Total contract value in USD, null if not stated | `18500` |
 | `deliverable_count` | number | Number of deliverables extracted | `4` |
-| `task_count` | number | Total tasks created in Asana (extracted + standard) | `9` |
 | `asana_project_id` | string | Asana project GID, null if creation failed | `1209876543210` |
-| `asana_project_url` | string | Direct URL to the Asana project | `https://app.asana.com/0/...` |
 | `kickoff_email_sent` | boolean | `true` if kickoff email sent successfully | `true` |
 | `extraction_quality` | string | `complete`, `partial`, or `insufficient` | `complete` |
 | `processing_status` | string | `success`, `partial_success`, or `failed` | `success` |
@@ -65,9 +63,9 @@ Append-only error log. Every failure surfaces here — the system never fails si
 
 | `error_type` | Cause | Recoverable |
 |-------------|-------|-------------|
-| `webhook_parse_failed` | Malformed PandaDoc payload | false |
+| `webhook_parse_failed` | Malformed DocuSign Connect payload | false |
 | `invalid_webhook_secret` | Secret header mismatch | false |
-| `pdf_download_failed` | PandaDoc API unavailable or bad document ID | true |
+| `pdf_download_failed` | DocuSign API unavailable or bad envelope ID | true |
 | `pdf_text_empty` | Scanned/image-only PDF, no extractable text | true (with corrected PDF) |
 | `claude_extraction_failed` | Malformed JSON response from Claude | true |
 | `asana_api_failed` | Asana project/task creation error | true |

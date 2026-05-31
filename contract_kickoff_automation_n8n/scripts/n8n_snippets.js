@@ -23,7 +23,9 @@ return [{
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// A4 — Prepare PDF
+// A4 — Prepare PDF (reference only — actual workflow uses native Anthropic node)
+// This snippet is for HTTP Request-based Claude calls. In the live workflow,
+// A4 is the Anthropic "Analyze Document" node which accepts binary PDF input directly.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const item = $input.all()[0];
@@ -32,7 +34,7 @@ const buffer = await this.helpers.getBinaryDataBuffer(0, binaryKey);
 const pdfBase64 = buffer.toString('base64');
 
 const claudeRequestBody = {
-  model: "claude-sonnet-4-6",
+  model: "claude-sonnet-4-5",
   max_tokens: 4096,
   system: "You are a contract analyst for a business automation system. Extract structured project data from service contracts so tasks can be automatically created. Extract only what is explicitly stated. Return null for fields you cannot determine. Respond with valid JSON only — no explanation, no markdown.",
   messages: [{

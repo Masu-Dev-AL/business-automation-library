@@ -1,19 +1,19 @@
 # Smart Contract-to-Kickoff Automation
 
-An automated client onboarding pipeline triggered the moment a contract is signed. Listens for a PandaDoc webhook, extracts the engagement scope using Claude AI, creates an Asana project with tasks and deadlines, and sends a personalized kickoff email — all within 60 seconds of signature.
+An automated client onboarding pipeline triggered the moment a contract is signed. Listens for a DocuSign Connect webhook, extracts the engagement scope using Claude AI, creates an Asana project with tasks and deadlines, and sends a personalized kickoff email — all within 60 seconds of signature.
 
 Built with **n8n** (self-hosted), **Claude API**, **Asana API**, **Gmail**, and **Google Sheets**.
 
 ## Architecture
 
 ```
-PandaDoc (signed contract)
+DocuSign (signed contract)
         ↓
 n8n Webhook Trigger
         ↓
-Validate secret → Download PDF → Extract text (pdfminer)
+Validate webhook → Download PDF from DocuSign API
         ↓
-Claude API — extract contract structure (deliverables, dates, client info)
+Claude AI — extract contract structure (deliverables, dates, client info)
         ↓
 Quality check: complete / partial / insufficient
         ↓                    ↓
@@ -21,7 +21,7 @@ Asana project created   Operator alert email
 + extracted tasks
 + standard tasks
         ↓
-Claude API — draft personalized kickoff email
+Claude AI — draft personalized kickoff email
         ↓
 Gmail — send to client (CC: account manager)
         ↓
@@ -32,7 +32,7 @@ See `technical_guide/architecture.md` for the full Mermaid diagram.
 
 ## Features
 
-- Webhook-triggered on PandaDoc `document_state_changed` (status: completed)
+- Webhook-triggered on DocuSign Connect `envelope-completed` event
 - Claude extracts client name, service type, deliverables, dates, contract value
 - Three-tier extraction quality scoring: `complete`, `partial`, `insufficient`
 - Asana project auto-created with extracted tasks + 5 standard onboarding tasks
@@ -40,7 +40,6 @@ See `technical_guide/architecture.md` for the full Mermaid diagram.
 - Google Sheets audit log: contracts tab, tasks tab, errors tab
 - Operator alert email on insufficient extraction or critical failure
 - Manual reprocess workflow (Workflow B) for failed contracts
-- DocuSign swap points documented throughout for enterprise use
 
 ## Project Structure
 
@@ -49,7 +48,7 @@ See `technical_guide/architecture.md` for the full Mermaid diagram.
 │   ├── .env.example                        # All required environment variables
 │   └── claude_extraction_prompt.md         # Standalone extraction prompt (tunable)
 ├── scripts/
-│   ├── n8n_validate_webhook.js             # A2 — PandaDoc webhook validation
+│   ├── n8n_validate_webhook.js             # A2 — DocuSign webhook validation
 │   ├── n8n_assess_extraction_quality.js    # A6 — quality scoring + contract_id generation
 │   ├── n8n_create_standard_tasks.js        # A10 — 5 baseline onboarding tasks
 │   └── generate_sample_contracts.py        # Generates 5 test PDFs for Phase 1/2 testing
@@ -86,7 +85,7 @@ python scripts/generate_sample_contracts.py
 ### 3. Configure credentials
 
 Follow the complete checklist in `technical_guide/prerequisites_checklist.md`:
-- PandaDoc webhook + API key
+- DocuSign Connect webhook + OAuth2 credentials
 - Anthropic API key
 - Asana personal access token + workspace/team GIDs
 - Gmail OAuth2
@@ -102,7 +101,7 @@ Follow the complete checklist in `technical_guide/prerequisites_checklist.md`:
 
 ### 5. Test
 
-Send `TEST-001` through PandaDoc and confirm:
+Trigger with `TEST-001` via DocuSign Connect and confirm:
 - Asana project created with extracted tasks + 5 standard tasks
 - Kickoff email received at client address
 - Row appended to Google Sheets `contracts` tab
@@ -111,8 +110,9 @@ Send `TEST-001` through PandaDoc and confirm:
 
 | Variable | Description |
 |----------|-------------|
-| `PANDADOC_WEBHOOK_SECRET` | Shared secret for validating webhook requests |
-| `PANDADOC_API_KEY` | PandaDoc API key for downloading PDFs |
+| `DOCUSIGN_ACCOUNT_ID` | DocuSign account ID from developer console |
+| `DOCUSIGN_OAUTH_CLIENT_ID` | DocuSign integration key (OAuth2 client ID) |
+| `DOCUSIGN_OAUTH_CLIENT_SECRET` | DocuSign OAuth2 secret key |
 | `ANTHROPIC_API_KEY` | Claude API key |
 | `ASANA_ACCESS_TOKEN` | Asana personal access token |
 | `ASANA_WORKSPACE_GID` | Asana workspace GID |
@@ -120,7 +120,6 @@ Send `TEST-001` through PandaDoc and confirm:
 | `OPERATOR_EMAIL` | Recipient for failure alert emails |
 | `ACCOUNT_MANAGER_EMAIL` | CC on all kickoff emails |
 | `EMAIL_SIGNATURE` | Plain text signature block for emails |
-| `DOCUSIGN_ACCOUNT_ID` | Phase 4: DocuSign account ID |
 | `CLICKUP_API_KEY` | Phase 3: ClickUp API key |
 | `CLICKUP_LIST_ID` | Phase 3: ClickUp list ID |
 | `NOTION_DATABASE_ID` | Phase 3: Notion database ID |
@@ -139,7 +138,7 @@ Swap points are documented per node in the seed prompt. All swaps happen at **no
 ## Phase Expansion Plan
 
 ### Phase 1 — End-to-end validation
-PandaDoc + Asana only. One clean test contract. Full pipeline: webhook → Asana → email.
+DocuSign Connect + Asana. One clean test contract. Full pipeline: webhook → Asana → email.
 
 ### Phase 2 — Extraction hardening
 Test 5 contract archetypes (see `sample_contracts/`). Refine Claude extraction prompt for edge cases: no dates, multi-phase SOWs, retainers.
@@ -147,10 +146,7 @@ Test 5 contract archetypes (see `sample_contracts/`). Refine Claude extraction p
 ### Phase 3 — Alternative PM outputs
 Add ClickUp, Notion, and Trello output paths. Always-on Google Sheets fallback.
 
-### Phase 4 — DocuSign support
-Parallel webhook trigger path for DocuSign `envelope-completed`. Merges at A4 (shared extraction logic).
-
-### v2 — Assignee matching
+### Phase 4 — Assignee matching
 Map `owner_role` strings to real Asana user GIDs via a lookup table in Google Sheets.
 
 ## Sample Test Contracts

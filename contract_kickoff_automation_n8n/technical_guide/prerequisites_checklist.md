@@ -7,22 +7,24 @@ Complete each section before activating the workflow in n8n.
 ## 1. n8n Instance
 
 - [ ] n8n self-hosted instance running (Docker recommended)
-- [ ] n8n accessible via public URL (required for PandaDoc webhook delivery)
-- [ ] `pdfminer.six` installed on the n8n host: `pip install pdfminer.six`
+- [ ] n8n accessible via public URL (required for DocuSign Connect webhook delivery)
 
 ---
 
-## 2. PandaDoc
+## 2. DocuSign
 
-- [ ] PandaDoc account created (free tier works)
-- [ ] API key generated: **Settings → Integrations → API**
-- [ ] Webhook configured:
-  - Go to **Settings → Integrations → Webhooks**
+- [ ] DocuSign Developer Sandbox created (free at developers.docusign.com)
+- [ ] Integration key created: **Apps & Keys → Add App and Integration Key**
+- [ ] OAuth2 secret generated for the integration key
+- [ ] DocuSign Connect webhook configured:
+  - Go to **Admin → Connect**
+  - Add a new configuration
   - URL: `https://your-n8n-instance.com/webhook/contract-signed`
-  - Events: `document_state_changed`
-  - Shared secret: generate a random string, save as `PANDADOC_WEBHOOK_SECRET`
-- [ ] n8n credential added: **HTTP Header Auth** with header `x-pd-secret` = webhook secret
-- [ ] Test: send a test webhook event from PandaDoc and confirm n8n receives it
+  - Trigger events: `Envelope Completed`
+  - Enable **Include Documents** so the PDF is accessible via the Documents API
+- [ ] Account ID noted: found in **Apps & Keys** or the API account overview
+- [ ] n8n credential added: **DocuSign OAuth2 API** with integration key, secret, and account ID
+- [ ] Test: complete a test envelope in the DocuSign sandbox and confirm n8n receives the webhook
 
 ---
 
@@ -30,8 +32,8 @@ Complete each section before activating the workflow in n8n.
 
 - [ ] Anthropic account created at console.anthropic.com
 - [ ] API key generated: **API Keys → Create key**
-- [ ] n8n credential added: **HTTP Header Auth** with header `x-api-key` = API key
-- [ ] Model in use: `claude-sonnet-4-6`
+- [ ] n8n credential added: **Anthropic** — paste the API key
+- [ ] Model in use: `claude-sonnet-4-5`
 
 ---
 
@@ -41,8 +43,8 @@ Complete each section before activating the workflow in n8n.
 - [ ] Personal Access Token generated: **My Profile → Apps → Manage Developer Apps → Personal Access Token**
 - [ ] Workspace GID noted: visible in Asana URL (`app.asana.com/0/{WORKSPACE_GID}/...`)
 - [ ] Team GID noted: GET `https://app.asana.com/api/1.0/teams` with your token
-- [ ] n8n credential added: **HTTP Header Auth** with header `Authorization` = `Bearer {token}`
-- [ ] Test: manually POST to Asana Projects API to confirm token + workspace GID are valid
+- [ ] n8n credential added: **Asana** — paste the Personal Access Token
+- [ ] Test: manually create an Asana project via the n8n Asana node to confirm the token + workspace GID are valid
 
 ---
 
@@ -74,8 +76,9 @@ Set in n8n: **Settings → Environment Variables** (or via `.env` file if self-h
 
 | Variable | Where to find it |
 |----------|-----------------|
-| `PANDADOC_WEBHOOK_SECRET` | The secret string you chose when configuring the PandaDoc webhook |
-| `PANDADOC_API_KEY` | PandaDoc Settings → API |
+| `DOCUSIGN_ACCOUNT_ID` | DocuSign Apps & Keys → API Account ID |
+| `DOCUSIGN_OAUTH_CLIENT_ID` | DocuSign Apps & Keys → Integration Key |
+| `DOCUSIGN_OAUTH_CLIENT_SECRET` | DocuSign Apps & Keys → Secret key for the integration |
 | `ANTHROPIC_API_KEY` | console.anthropic.com → API Keys |
 | `ASANA_ACCESS_TOKEN` | Asana → Personal Access Token |
 | `ASANA_WORKSPACE_GID` | Asana URL or API |
@@ -118,5 +121,5 @@ When adding alternative PM tool outputs in Phase 3:
 - [ ] All credentials attached to correct nodes
 - [ ] All environment variables set
 - [ ] Workflow activated
-- [ ] Send a test PandaDoc document through the full pipeline using `TEST-001` (web design contract)
+- [ ] Complete a test DocuSign envelope using `TEST-001` (web design contract) sent through the full pipeline
 - [ ] Confirm: Asana project created · kickoff email received · Google Sheets row appended

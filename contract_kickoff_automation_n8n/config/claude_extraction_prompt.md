@@ -1,9 +1,9 @@
 # Claude Contract Extraction Prompt
 
-Used in n8n node **A5 — Claude API: Extract Contract Structure**.
+Used in n8n node **A4 — Analyze Document** (Anthropic native node).
 
 Tune the user prompt's schema or instructions to match the specific contract formats you handle.
-The model is called via HTTP Request POST to `https://api.anthropic.com/v1/messages`.
+The model is called via the official Anthropic n8n node in **Analyze Document** operation mode — no HTTP Request node required.
 
 ---
 
@@ -55,7 +55,7 @@ Extract the following structured data from this service contract. Return JSON ma
 }
 
 Contract text:
-{{ $json.contract_text }}
+[Document attached as binary PDF — Claude reads the document directly via the Anthropic native node]
 ```
 
 ---
@@ -72,21 +72,11 @@ Contract text:
 
 ## n8n Node Configuration
 
-- Node type: `HTTP Request`
-- Method: POST
-- URL: `https://api.anthropic.com/v1/messages`
-- Headers:
-  - `x-api-key`: `{{ $env.ANTHROPIC_API_KEY }}`
-  - `anthropic-version`: `2023-06-01`
-  - `content-type`: `application/json`
-- Body (JSON):
-  ```json
-  {
-    "model": "claude-sonnet-4-6",
-    "max_tokens": 2000,
-    "system": "<system prompt above>",
-    "messages": [
-      { "role": "user", "content": "<user prompt above>" }
-    ]
-  }
-  ```
+- Node type: `Anthropic`
+- Operation: `Analyze Document`
+- Credential: Anthropic API credential (API key from console.anthropic.com)
+- Model: `claude-sonnet-4-5`
+- Max Tokens: `4096`
+- Input: Binary field from the A3 Download PDF node (DocuSign Documents API response)
+- System Prompt: paste the system prompt above
+- User Prompt: paste the user prompt above (remove the `[Document attached...]` placeholder line — Claude receives the PDF binary automatically)

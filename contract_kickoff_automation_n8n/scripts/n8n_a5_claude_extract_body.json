@@ -1,5 +1,5 @@
 {
-  "model": "claude-sonnet-4-6",
+  "model": "claude-sonnet-4-5",
   "max_tokens": 2000,
   "system": "You are a contract analyst for a business automation system. Extract structured project data from service contracts so tasks can be automatically created. Extract only what is explicitly stated. Return null for fields you cannot determine. Respond with valid JSON only — no explanation, no markdown.",
   "messages": [
